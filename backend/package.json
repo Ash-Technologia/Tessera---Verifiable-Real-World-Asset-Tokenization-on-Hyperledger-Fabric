@@ -14,7 +14,8 @@
     "test": "echo 'Backend tests — Phase 2' && exit 0",
     "test:phase3": "node ../tests/phase3.test.js",
     "test:phase4": "node ../tests/phase4.test.js",
-    "test:phase5": "node ../tests/phase5.test.js"
+    "test:phase5": "node ../tests/phase5.test.js",
+    "test:phase6a": "node ../tests/phase6a.test.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.12.4",
