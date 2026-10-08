@@ -12,6 +12,7 @@
 
 const contractService = require('../fabric/contract.service');
 const { transferPolicyGate, PolicyRejectionError } = require('./transfer.policy.gate');
+const { tokenLifecycleRightsService, LifecycleRejectionError } = require('../token/token.lifecycle.rights');
 const logger = require('../../utils/logger');
 
 class TransferService {
@@ -29,7 +30,7 @@ class TransferService {
    * @param {string} [params.reason]
    * @param {string} [params.transferId]
    * @param {object} [params.context] - Caller-supplied evaluation context / attestation overrides
-   * @returns {Promise<{ txId: string, transfer: object, policyDecision: object }>}
+   * @returns {Promise<{ txId: string, transfer: object, policyDecision: object, lifecycleDecision: object }>}
    */
   async transferOwnership({
     tokenId,
@@ -54,7 +55,7 @@ class TransferService {
       throw new Error('SELF_TRANSFER_NOT_ALLOWED: cannot transfer to self');
     }
 
-    // Validate participants
+    // 1. Validate participants
     const validation = await contractService.validateTransferParticipants(
       fromOwnerId,
       fromOwnerMSP,
@@ -66,10 +67,34 @@ class TransferService {
       throw new Error(`TRANSFER_PARTICIPANTS_INVALID: ${validation.checks.join(', ')}`);
     }
 
-    // Phase 6C — Policy Enforcement Gate (Evaluated before ledger mutation)
+    // 2. Resolve token and verify asset-token binding from Fabric
+    let token;
+    try {
+      token = await contractService.getToken(tokenId);
+    } catch (err) {
+      const e = new Error(`TOKEN_NOT_FOUND: token "${tokenId}" does not exist`);
+      e.statusCode = 404;
+      throw e;
+    }
+
+    if (!token) {
+      const e = new Error(`TOKEN_NOT_FOUND: token "${tokenId}" does not exist`);
+      e.statusCode = 404;
+      throw e;
+    }
+
+    if (token.assetId && assetId && token.assetId !== assetId) {
+      throw new Error(`TOKEN_ASSET_MISMATCH: token "${tokenId}" belongs to asset "${token.assetId}", not "${assetId}"`);
+    }
+    const resolvedAssetId = token.assetId || assetId;
+
+    // 3. Phase 7B — Lifecycle-Aware Token Rights Gate (Evaluated before policy gate and ledger mutation)
+    const lifecycleDecision = await tokenLifecycleRightsService.enforceTokenLifecycleRights(tokenId, 'TRANSFER');
+
+    // 4. Phase 6C — Policy Enforcement Gate (Evaluated before ledger mutation)
     const evaluationContext = await transferPolicyGate.buildTransferEvaluationContext({
       tokenId,
-      assetId,
+      assetId: resolvedAssetId,
       fromOwnerId,
       fromOwnerMSP,
       toOwnerId,

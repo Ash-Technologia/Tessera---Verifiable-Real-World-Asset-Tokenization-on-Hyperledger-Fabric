@@ -55,9 +55,11 @@ class PolicyRegistry {
     if (this._store.has(key)) {
       const existing = this._store.get(key);
       // Check if identical definition (idempotent re-registration)
-      const existingStr = JSON.stringify(existing);
-      const newStr = JSON.stringify(policy);
-      if (existingStr === newStr) {
+      const normalizeForComp = (p) => {
+        const { createdAt, updatedAt, ...rest } = p;
+        return JSON.stringify(rest);
+      };
+      if (normalizeForComp(existing) === normalizeForComp(policy)) {
         return existing;
       }
       throw new Error(

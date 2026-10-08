@@ -18,7 +18,8 @@
     "test:phase6a": "node ../tests/phase6a.test.js",
     "test:phase6b": "node ../tests/phase6b.test.js",
     "test:phase6c": "node ../tests/phase6c.test.js",
-    "test:phase7a": "node ../tests/phase7a.test.js"
+    "test:phase7a": "node ../tests/phase7a.test.js",
+    "test:phase7b": "node ../tests/phase7b.test.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.12.4",

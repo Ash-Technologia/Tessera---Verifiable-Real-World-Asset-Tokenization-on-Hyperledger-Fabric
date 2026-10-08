@@ -97,4 +97,32 @@ router.get('/:tokenId/asset', requireFabricConnection, async (req, res, next) =>
   }
 });
 
+// GET /api/tokens/:tokenId/lifecycle-rights — Get Lifecycle Rights for Token
+router.get('/:tokenId/lifecycle-rights', requireFabricConnection, async (req, res, next) => {
+  const { tokenId } = req.params;
+  try {
+    const rights = await tokenService.getTokenLifecycleRights(tokenId);
+    res.json({ success: true, tokenId, ...rights });
+  } catch (err) {
+    if (err.statusCode === 404 || (err.message && err.message.includes('not exist'))) {
+      return res.status(404).json({ success: false, error: err.message });
+    }
+    next(err);
+  }
+});
+
+// GET /api/tokens/:tokenId/provenance — Get Full Provenance & Lifecycle Traceability
+router.get('/:tokenId/provenance', requireFabricConnection, async (req, res, next) => {
+  const { tokenId } = req.params;
+  try {
+    const provenance = await tokenService.getTokenProvenance(tokenId);
+    res.json({ success: true, tokenId, ...provenance });
+  } catch (err) {
+    if (err.statusCode === 404 || (err.message && err.message.includes('not exist'))) {
+      return res.status(404).json({ success: false, error: err.message });
+    }
+    next(err);
+  }
+});
+
 module.exports = router;

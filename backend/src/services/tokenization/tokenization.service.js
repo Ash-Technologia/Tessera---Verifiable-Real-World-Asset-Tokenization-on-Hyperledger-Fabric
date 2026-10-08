@@ -67,7 +67,31 @@ class TokenizationService {
     if (!initialOwnerId) throw new Error('initialOwnerId is required');
     if (!initialOwnerMSP) throw new Error('initialOwnerMSP is required');
 
-    // Check prerequisites first
+    // 1. Verify target asset exists
+    try {
+      await contractService.readAsset(assetId);
+    } catch (err) {
+      const e = new Error(`ASSET_NOT_FOUND: cannot tokenize non-existent asset "${assetId}"`);
+      e.statusCode = 404;
+      throw e;
+    }
+
+    // 2. Immutability & Rebind Protection: verify token does not already exist
+    try {
+      const existingToken = await contractService.getToken(tokenId);
+      if (existingToken) {
+        const e = new Error(`TOKEN_ALREADY_EXISTS: token "${tokenId}" already exists and cannot be rebound to another asset`);
+        e.statusCode = 409;
+        throw e;
+      }
+    } catch (err) {
+      if (err.message && err.message.includes('TOKEN_ALREADY_EXISTS')) {
+        throw err;
+      }
+      // Non-existent token is expected
+    }
+
+    // 3. Check prerequisites
     const readiness = await this.checkTokenizationReadiness(assetId);
     if (!readiness.canTokenize) {
       const err = new Error(`Tokenization prerequisites not met: ${readiness.reasons.join(', ')}`);

@@ -75,6 +75,19 @@ router.post('/transfer', requireFabricConnection, async (req, res, next) => {
       policyDecision: result.policyDecision,
     });
   } catch (err) {
+    if (err.isLifecycleRejection || err.error === 'TOKEN_OPERATION_BLOCKED_BY_ASSET_STATE') {
+      return res.status(422).json({
+        success: false,
+        error: 'TOKEN_OPERATION_BLOCKED_BY_ASSET_STATE',
+        decision: 'DENY',
+        assetId: err.assetId,
+        tokenId: err.tokenId,
+        assetState: err.assetState,
+        operation: err.operation || 'TRANSFER',
+        reasonCode: err.reasonCode,
+        message: err.message,
+      });
+    }
     if (err.isPolicyRejection || (err.message && err.message.startsWith('TRANSFER_REJECTED_BY_POLICY'))) {
       return res.status(403).json({
         success: false,

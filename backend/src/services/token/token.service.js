@@ -43,6 +43,28 @@ class TokenService {
   async getAssetByToken(tokenId) {
     return contractService.getAssetByToken(tokenId);
   }
+
+  /**
+   * Retrieves the lifecycle-derived operational rights for a token.
+   *
+   * @param {string} tokenId
+   * @returns {Promise<object>}
+   */
+  async getTokenLifecycleRights(tokenId) {
+    const { tokenLifecycleRightsService } = require('./token.lifecycle.rights');
+    return tokenLifecycleRightsService.resolveTokenLifecycleRights(tokenId);
+  }
+
+  /**
+   * Retrieves the full cryptographic and provenance traceability for a token.
+   *
+   * @param {string} tokenId
+   * @returns {Promise<object>}
+   */
+  async getTokenProvenance(tokenId) {
+    const { tokenLifecycleRightsService } = require('./token.lifecycle.rights');
+    return tokenLifecycleRightsService.getTokenProvenance(tokenId);
+  }
 }
 
 module.exports = new TokenService();
