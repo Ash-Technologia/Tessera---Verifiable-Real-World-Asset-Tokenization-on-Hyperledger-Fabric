@@ -1,0 +1,139 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "templateId": "grain",
+  "version": "1.0",
+  "name": "Grain",
+  "description": "Configuration template for agricultural grain and commodity batches",
+  "assetType": "grain",
+  "status": "ACTIVE",
+  "fields": [
+    {
+      "name": "cropType",
+      "label": "Crop Type",
+      "type": "string",
+      "required": true,
+      "minLength": 2,
+      "maxLength": 50,
+      "description": "Botanical or agricultural crop variety (e.g., Wheat, Rice, Corn, Soybean, Barley)"
+    },
+    {
+      "name": "quantity",
+      "label": "Quantity",
+      "type": "number",
+      "required": true,
+      "min": 1,
+      "description": "Total quantity of the commodity lot"
+    },
+    {
+      "name": "unit",
+      "label": "Unit of Measurement",
+      "type": "string",
+      "required": true,
+      "enum": ["kg", "metric_ton", "quintal", "bushel"],
+      "description": "Standardized unit of weight or volume"
+    },
+    {
+      "name": "grade",
+      "label": "Quality Grade",
+      "type": "string",
+      "required": true,
+      "enum": ["A", "B", "C", "PREMIUM", "STANDARD", "EXPORT_QUALITY"],
+      "description": "Commodity quality grade or classification"
+    },
+    {
+      "name": "warehouse",
+      "label": "Warehouse / Storage Facility",
+      "type": "string",
+      "required": true,
+      "minLength": 3,
+      "maxLength": 100,
+      "description": "Designated licensed depository or silo facility"
+    },
+    {
+      "name": "batchNumber",
+      "label": "Batch / Lot Number",
+      "type": "string",
+      "required": true,
+      "minLength": 2,
+      "maxLength": 50,
+      "description": "Traceable producer harvest lot or intake batch identifier"
+    },
+    {
+      "name": "harvestDate",
+      "label": "Harvest Date",
+      "type": "string",
+      "required": false,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "ISO date (YYYY-MM-DD) when the batch was harvested"
+    },
+    {
+      "name": "moistureContentPercent",
+      "label": "Moisture Content (%)",
+      "type": "number",
+      "required": false,
+      "min": 0,
+      "max": 100,
+      "description": "Laboratory-tested moisture percentage"
+    }
+  ],
+  "canonicalIdentityFields": [
+    "warehouse",
+    "batchNumber",
+    "cropType"
+  ],
+  "requiredEvidence": [
+    "WAREHOUSE_RECEIPT",
+    "BATCH_CERTIFICATE",
+    "QUALITY_CERTIFICATE"
+  ],
+  "evidenceRequirements": [
+    {
+      "type": "WAREHOUSE_RECEIPT",
+      "name": "Electronic Negotiable Warehouse Receipt (e-NWR)",
+      "required": true,
+      "description": "Regulated warehouse receipt establishing depository custody"
+    },
+    {
+      "type": "BATCH_CERTIFICATE",
+      "name": "Producer Batch / Intake Lot Certificate",
+      "required": true,
+      "description": "Traceable intake certificate certifying harvest origin and weight"
+    },
+    {
+      "type": "QUALITY_CERTIFICATE",
+      "name": "Quality Assay & Grading Certificate",
+      "required": true,
+      "description": "Certified laboratory report confirming crop grade, moisture, and purity"
+    }
+  ],
+  "lifecycle": {
+    "initialState": "DRAFT",
+    "supportedStates": [
+      "DRAFT",
+      "REGISTERED",
+      "UNDER_VERIFICATION",
+      "VERIFIED",
+      "REJECTED"
+    ],
+    "allowedTransitions": {
+      "DRAFT": ["REGISTERED"],
+      "REGISTERED": ["UNDER_VERIFICATION"],
+      "UNDER_VERIFICATION": ["VERIFIED", "REJECTED"],
+      "VERIFIED": [],
+      "REJECTED": []
+    }
+  },
+  "valuation": {
+    "supportedMethods": [
+      "COMMODITY_SPOT_PRICE",
+      "MANDI_BENCHMARK",
+      "COST_BASIS"
+    ],
+    "defaultCurrency": "USD"
+  },
+  "tokenization": {
+    "wholeTokensAllowed": true,
+    "fractionalAllowed": true,
+    "minimumUnit": 1
+  }
+}

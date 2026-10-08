@@ -1,0 +1,394 @@
+# =============================================================================
+# TESSERA Docker Compose — Phase 1
+# Hyperledger Fabric Network: IssuerOrg + VerifierOrg + ComplianceOrg
+# Fabric: 2.5.16 | Fabric CA: 1.5.17 | CouchDB: 3.3.3
+# =============================================================================
+#
+# Architecture:
+#   4 Fabric CAs (Orderer, Issuer, Verifier, Compliance)
+#   1 Orderer  (Raft, single-node dev mode)
+#   3 Peers    (one per peer org)
+#   3 CouchDB  (world-state DB per peer — NOT a separate app database)
+#
+# CouchDB is Fabric infrastructure:
+#   Fabric Ledger → Fabric World State → CouchDB
+#
+# Run from WSL:
+#   cp .env.example .env
+#   docker compose up -d ca.orderer.tessera.com ca.issuer.tessera.com \
+#                        ca.verifier.tessera.com ca.compliance.tessera.com
+#   ./blockchain/scripts/network.sh up
+# =============================================================================
+
+version: "3.7"
+
+networks:
+  tessera:
+    name: tessera-network
+
+# Named volumes for durable peer/orderer data between restarts.
+# These are separate from the blockchain ledger (which lives in the volume).
+# Use 'docker compose down -v' to wipe all state for a full network reset.
+volumes:
+  orderer.tessera.com:
+  peer0.issuer.tessera.com:
+  peer0.verifier.tessera.com:
+  peer0.compliance.tessera.com:
+  couchdb.peer0.issuer.tessera.com:
+  couchdb.peer0.verifier.tessera.com:
+  couchdb.peer0.compliance.tessera.com:
+
+services:
+
+  # ============================================================
+  # FABRIC CERTIFICATE AUTHORITIES
+  # One CA per organization — identity root of trust per org
+  # ============================================================
+
+  ca.orderer.tessera.com:
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION:-1.5.17}
+    container_name: ca.orderer.tessera.com
+    hostname: ca.orderer.tessera.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.orderer.tessera.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18054
+    ports:
+      - "8054:8054"
+      - "18054:18054"
+    command: sh -c 'fabric-ca-server start -b ${CA_ORDERER_ADMIN_USER:-admin}:${CA_ORDERER_ADMIN_PASS:-adminpw} -d'
+    volumes:
+      - ./blockchain/organizations/fabric-ca/orderer:/etc/hyperledger/fabric-ca-server
+    networks:
+      - tessera
+    labels:
+      tessera.component: fabric-ca
+      tessera.org: orderer
+
+  ca.issuer.tessera.com:
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION:-1.5.17}
+    container_name: ca.issuer.tessera.com
+    hostname: ca.issuer.tessera.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.issuer.tessera.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17054
+    ports:
+      - "7054:7054"
+      - "17054:17054"
+    command: sh -c 'fabric-ca-server start -b ${CA_ISSUER_ADMIN_USER:-admin}:${CA_ISSUER_ADMIN_PASS:-adminpw} -d'
+    volumes:
+      - ./blockchain/organizations/fabric-ca/issuer:/etc/hyperledger/fabric-ca-server
+    networks:
+      - tessera
+    labels:
+      tessera.component: fabric-ca
+      tessera.org: issuer
+
+  ca.verifier.tessera.com:
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION:-1.5.17}
+    container_name: ca.verifier.tessera.com
+    hostname: ca.verifier.tessera.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.verifier.tessera.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=9054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:19054
+    ports:
+      - "9054:9054"
+      - "19054:19054"
+    command: sh -c 'fabric-ca-server start -b ${CA_VERIFIER_ADMIN_USER:-admin}:${CA_VERIFIER_ADMIN_PASS:-adminpw} -d'
+    volumes:
+      - ./blockchain/organizations/fabric-ca/verifier:/etc/hyperledger/fabric-ca-server
+    networks:
+      - tessera
+    labels:
+      tessera.component: fabric-ca
+      tessera.org: verifier
+
+  ca.compliance.tessera.com:
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION:-1.5.17}
+    container_name: ca.compliance.tessera.com
+    hostname: ca.compliance.tessera.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.compliance.tessera.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=10054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:20054
+    ports:
+      - "10054:10054"
+      - "20054:20054"
+    command: sh -c 'fabric-ca-server start -b ${CA_COMPLIANCE_ADMIN_USER:-admin}:${CA_COMPLIANCE_ADMIN_PASS:-adminpw} -d'
+    volumes:
+      - ./blockchain/organizations/fabric-ca/compliance:/etc/hyperledger/fabric-ca-server
+    networks:
+      - tessera
+    labels:
+      tessera.component: fabric-ca
+      tessera.org: compliance
+
+  # ============================================================
+  # COUCHDB — Fabric World-State Databases
+  #
+  # IMPORTANT: These CouchDB instances are Fabric infrastructure.
+  # They store the Fabric world state (current key-value state).
+  # They are NOT an application database. Never read/write them
+  # directly from the application — always go through Fabric.
+  #
+  # Fabric Ledger → Fabric World State → CouchDB
+  # ============================================================
+
+  couchdb.peer0.issuer.tessera.com:
+    image: couchdb:3.3.3
+    container_name: couchdb.peer0.issuer.tessera.com
+    hostname: couchdb.peer0.issuer.tessera.com
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER:-admin}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:-adminpw}
+    ports:
+      - "5984:5984"
+    volumes:
+      - couchdb.peer0.issuer.tessera.com:/opt/couchdb/data
+    networks:
+      - tessera
+    labels:
+      tessera.component: couchdb
+      tessera.org: issuer
+      tessera.peer: peer0.issuer.tessera.com
+
+  couchdb.peer0.verifier.tessera.com:
+    image: couchdb:3.3.3
+    container_name: couchdb.peer0.verifier.tessera.com
+    hostname: couchdb.peer0.verifier.tessera.com
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER:-admin}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:-adminpw}
+    ports:
+      - "7984:5984"
+    volumes:
+      - couchdb.peer0.verifier.tessera.com:/opt/couchdb/data
+    networks:
+      - tessera
+    labels:
+      tessera.component: couchdb
+      tessera.org: verifier
+      tessera.peer: peer0.verifier.tessera.com
+
+  couchdb.peer0.compliance.tessera.com:
+    image: couchdb:3.3.3
+    container_name: couchdb.peer0.compliance.tessera.com
+    hostname: couchdb.peer0.compliance.tessera.com
+    environment:
+      - COUCHDB_USER=${COUCHDB_USER:-admin}
+      - COUCHDB_PASSWORD=${COUCHDB_PASSWORD:-adminpw}
+    ports:
+      - "9984:5984"
+    volumes:
+      - couchdb.peer0.compliance.tessera.com:/opt/couchdb/data
+    networks:
+      - tessera
+    labels:
+      tessera.component: couchdb
+      tessera.org: compliance
+      tessera.peer: peer0.compliance.tessera.com
+
+  # ============================================================
+  # ORDERER — Raft consensus, single node (dev)
+  # Uses channel participation API (no system channel — Fabric 2.5)
+  # ============================================================
+
+  orderer.tessera.com:
+    image: hyperledger/fabric-orderer:${FABRIC_VERSION:-2.5.16}
+    container_name: orderer.tessera.com
+    hostname: orderer.tessera.com
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      # TLS
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Raft cluster TLS
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Channel participation API (replaces system channel — Fabric 2.5)
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      # Operations
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:9443
+    working_dir: /root
+    command: orderer
+    volumes:
+      - ./blockchain/organizations/ordererOrganizations/tessera.com/orderers/orderer.tessera.com/msp:/var/hyperledger/orderer/msp
+      - ./blockchain/organizations/ordererOrganizations/tessera.com/orderers/orderer.tessera.com/tls:/var/hyperledger/orderer/tls
+      - orderer.tessera.com:/var/hyperledger/production/orderer
+    ports:
+      - "7050:7050"   # gRPC
+      - "7053:7053"   # Admin (osnadmin)
+      - "9443:9443"   # Operations
+    networks:
+      - tessera
+    depends_on:
+      - ca.orderer.tessera.com
+    labels:
+      tessera.component: orderer
+
+  # ============================================================
+  # PEERS — One per organization, CouchDB-backed world state
+  # ============================================================
+
+  peer0.issuer.tessera.com:
+    image: hyperledger/fabric-peer:${FABRIC_VERSION:-2.5.16}
+    container_name: peer0.issuer.tessera.com
+    hostname: peer0.issuer.tessera.com
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=tessera-network
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.issuer.tessera.com
+      - CORE_PEER_ADDRESS=peer0.issuer.tessera.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.issuer.tessera.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.issuer.tessera.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.issuer.tessera.com:7051
+      - CORE_PEER_LOCALMSPID=IssuerMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9444
+      # CouchDB World State — Fabric uses CouchDB, NOT the app
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.peer0.issuer.tessera.com:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=${COUCHDB_USER:-admin}
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=${COUCHDB_PASSWORD:-adminpw}
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ./blockchain/organizations/peerOrganizations/issuer.tessera.com/peers/peer0.issuer.tessera.com/msp:/etc/hyperledger/fabric/msp
+      - ./blockchain/organizations/peerOrganizations/issuer.tessera.com/peers/peer0.issuer.tessera.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.issuer.tessera.com:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start
+    ports:
+      - "7051:7051"
+      - "9444:9444"
+    networks:
+      - tessera
+    depends_on:
+      - orderer.tessera.com
+      - couchdb.peer0.issuer.tessera.com
+    labels:
+      tessera.component: peer
+      tessera.org: issuer
+
+  peer0.verifier.tessera.com:
+    image: hyperledger/fabric-peer:${FABRIC_VERSION:-2.5.16}
+    container_name: peer0.verifier.tessera.com
+    hostname: peer0.verifier.tessera.com
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=tessera-network
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.verifier.tessera.com
+      - CORE_PEER_ADDRESS=peer0.verifier.tessera.com:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.verifier.tessera.com:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.verifier.tessera.com:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.verifier.tessera.com:9051
+      - CORE_PEER_LOCALMSPID=VerifierMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9445
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.peer0.verifier.tessera.com:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=${COUCHDB_USER:-admin}
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=${COUCHDB_PASSWORD:-adminpw}
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ./blockchain/organizations/peerOrganizations/verifier.tessera.com/peers/peer0.verifier.tessera.com/msp:/etc/hyperledger/fabric/msp
+      - ./blockchain/organizations/peerOrganizations/verifier.tessera.com/peers/peer0.verifier.tessera.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.verifier.tessera.com:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start
+    ports:
+      - "9051:9051"
+      - "9445:9445"
+    networks:
+      - tessera
+    depends_on:
+      - orderer.tessera.com
+      - couchdb.peer0.verifier.tessera.com
+    labels:
+      tessera.component: peer
+      tessera.org: verifier
+
+  peer0.compliance.tessera.com:
+    image: hyperledger/fabric-peer:${FABRIC_VERSION:-2.5.16}
+    container_name: peer0.compliance.tessera.com
+    hostname: peer0.compliance.tessera.com
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=tessera-network
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.compliance.tessera.com
+      - CORE_PEER_ADDRESS=peer0.compliance.tessera.com:11051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:11051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.compliance.tessera.com:11052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:11052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.compliance.tessera.com:11051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.compliance.tessera.com:11051
+      - CORE_PEER_LOCALMSPID=ComplianceMSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9446
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.peer0.compliance.tessera.com:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=${COUCHDB_USER:-admin}
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=${COUCHDB_PASSWORD:-adminpw}
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ./blockchain/organizations/peerOrganizations/compliance.tessera.com/peers/peer0.compliance.tessera.com/msp:/etc/hyperledger/fabric/msp
+      - ./blockchain/organizations/peerOrganizations/compliance.tessera.com/peers/peer0.compliance.tessera.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.compliance.tessera.com:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start
+    ports:
+      - "11051:11051"
+      - "9446:9446"
+    networks:
+      - tessera
+    depends_on:
+      - orderer.tessera.com
+      - couchdb.peer0.compliance.tessera.com
+    labels:
+      tessera.component: peer
+      tessera.org: compliance

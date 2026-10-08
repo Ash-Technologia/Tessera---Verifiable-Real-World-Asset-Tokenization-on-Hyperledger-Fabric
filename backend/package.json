@@ -1,0 +1,42 @@
+{
+  "name": "tessera-backend",
+  "version": "5.0.0",
+  "description": "TESSERA Real-World Asset Tokenization Platform — Backend Service",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node scripts/seed.js",
+    "seed:phase4": "node scripts/seed-phase4.js",
+    "test": "echo 'Backend tests — Phase 2' && exit 0",
+    "test:phase3": "node ../tests/phase3.test.js",
+    "test:phase4": "node ../tests/phase4.test.js",
+    "test:phase5": "node ../tests/phase5.test.js"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.12.4",
+    "@hyperledger/fabric-gateway": "^1.7.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "minio": "^8.0.7",
+    "multer": "^2.4.0",
+    "s3rver": "^3.7.1",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
+  "keywords": [
+    "hyperledger",
+    "fabric",
+    "blockchain",
+    "rwa",
+    "tokenization"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "templateId": "land",
+  "version": "1.0",
+  "name": "Land",
+  "description": "Configuration template for real estate, plots, and land parcels",
+  "assetType": "land",
+  "status": "ACTIVE",
+  "fields": [
+    {
+      "name": "surveyNumber",
+      "label": "Survey Number",
+      "type": "string",
+      "required": true,
+      "minLength": 2,
+      "maxLength": 50,
+      "description": "Cadastral or government land survey number (e.g., SY-12345, Plot 42)"
+    },
+    {
+      "name": "location",
+      "label": "Location / Address",
+      "type": "string",
+      "required": true,
+      "minLength": 3,
+      "maxLength": 200,
+      "description": "Physical geographic location or street address"
+    },
+    {
+      "name": "areaSqFt",
+      "label": "Area (Sq Ft)",
+      "type": "number",
+      "required": true,
+      "min": 1,
+      "description": "Total parcel land area measured in square feet"
+    },
+    {
+      "name": "zoning",
+      "label": "Zoning Category",
+      "type": "string",
+      "required": false,
+      "enum": ["RESIDENTIAL", "COMMERCIAL", "AGRICULTURAL", "INDUSTRIAL", "MIXED_USE"],
+      "description": "Municipal or regulatory land use designation"
+    },
+    {
+      "name": "titleReference",
+      "label": "Title Deed Reference",
+      "type": "string",
+      "required": false,
+      "minLength": 3,
+      "maxLength": 100,
+      "description": "Official registry deed registration or title reference number"
+    },
+    {
+      "name": "country",
+      "label": "Country Code",
+      "type": "string",
+      "required": false,
+      "minLength": 2,
+      "maxLength": 3,
+      "description": "ISO country code (e.g., IND, USA, GBR)"
+    },
+    {
+      "name": "jurisdiction",
+      "label": "Registry Jurisdiction",
+      "type": "string",
+      "required": false,
+      "description": "Local land registry office or sub-registrar district"
+    }
+  ],
+  "canonicalIdentityFields": [
+    "surveyNumber",
+    "location"
+  ],
+  "requiredEvidence": [
+    "TITLE_DEED",
+    "SURVEY_RECORD",
+    "OWNERSHIP_PROOF",
+    "PROPERTY_TAX"
+  ],
+  "evidenceRequirements": [
+    {
+      "type": "TITLE_DEED",
+      "name": "Registered Title Deed / Conveyance Deed",
+      "required": true,
+      "description": "Primary legal document proving registered title to the real estate"
+    },
+    {
+      "type": "SURVEY_RECORD",
+      "name": "Cadastral Survey Record / Demarcation Map",
+      "required": true,
+      "description": "Official government survey plan showing boundaries and coordinates"
+    },
+    {
+      "type": "OWNERSHIP_PROOF",
+      "name": "Proof of Ownership / Mutation Extract",
+      "required": true,
+      "description": "Revenue department mutation extract or patta/record of rights"
+    },
+    {
+      "type": "PROPERTY_TAX",
+      "name": "Latest Municipal Property Tax Receipt",
+      "required": true,
+      "description": "Paid tax receipt showing up-to-date assessment and compliance"
+    }
+  ],
+  "lifecycle": {
+    "initialState": "DRAFT",
+    "supportedStates": [
+      "DRAFT",
+      "REGISTERED",
+      "UNDER_VERIFICATION",
+      "VERIFIED",
+      "REJECTED"
+    ],
+    "allowedTransitions": {
+      "DRAFT": ["REGISTERED"],
+      "REGISTERED": ["UNDER_VERIFICATION"],
+      "UNDER_VERIFICATION": ["VERIFIED", "REJECTED"],
+      "VERIFIED": [],
+      "REJECTED": []
+    }
+  },
+  "valuation": {
+    "supportedMethods": [
+      "GOVERNMENT_GUIDELINE_VALUE",
+      "INDEPENDENT_APPRAISAL",
+      "RECENT_COMPARABLE_SALES"
+    ],
+    "defaultCurrency": "USD"
+  },
+  "tokenization": {
+    "wholeTokensAllowed": true,
+    "fractionalAllowed": true,
+    "minimumUnit": 1
+  }
+}

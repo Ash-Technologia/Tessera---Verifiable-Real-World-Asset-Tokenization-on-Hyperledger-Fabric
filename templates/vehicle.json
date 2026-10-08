@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "templateId": "vehicle",
+  "version": "1.0",
+  "name": "Vehicle",
+  "description": "Configuration template for automotive and motor vehicle assets",
+  "assetType": "vehicle",
+  "status": "ACTIVE",
+  "fields": [
+    {
+      "name": "vin",
+      "label": "Vehicle Identification Number (VIN)",
+      "type": "string",
+      "required": true,
+      "pattern": "^[A-HJ-NPR-Z0-9]{17}$",
+      "description": "Standard 17-character alphanumeric VIN without I, O, or Q"
+    },
+    {
+      "name": "registrationNumber",
+      "label": "Registration Number",
+      "type": "string",
+      "required": true,
+      "minLength": 3,
+      "maxLength": 20,
+      "description": "Official vehicle license plate or registration number"
+    },
+    {
+      "name": "manufacturer",
+      "label": "Manufacturer",
+      "type": "string",
+      "required": true,
+      "minLength": 2,
+      "maxLength": 50,
+      "description": "Vehicle maker or manufacturer brand (e.g., Tata, Toyota, Tesla)"
+    },
+    {
+      "name": "model",
+      "label": "Model",
+      "type": "string",
+      "required": true,
+      "minLength": 1,
+      "maxLength": 50,
+      "description": "Vehicle model name (e.g., Nexon, Camry, Model 3)"
+    },
+    {
+      "name": "year",
+      "label": "Year",
+      "type": "integer",
+      "required": true,
+      "min": 1900,
+      "max": 2100,
+      "description": "Year of vehicle manufacture"
+    },
+    {
+      "name": "mileage",
+      "label": "Mileage (km)",
+      "type": "number",
+      "required": false,
+      "min": 0,
+      "description": "Odometer reading in kilometers"
+    },
+    {
+      "name": "color",
+      "label": "Color",
+      "type": "string",
+      "required": false,
+      "description": "Exterior color of the vehicle"
+    },
+    {
+      "name": "fuelType",
+      "label": "Fuel Type",
+      "type": "string",
+      "required": false,
+      "enum": ["PETROL", "DIESEL", "ELECTRIC", "HYBRID", "CNG"],
+      "description": "Propulsion or fuel category"
+    }
+  ],
+  "canonicalIdentityFields": [
+    "vin",
+    "registrationNumber"
+  ],
+  "requiredEvidence": [
+    "OWNERSHIP_PROOF",
+    "REGISTRATION_CERTIFICATE",
+    "INSURANCE",
+    "INSPECTION_REPORT"
+  ],
+  "evidenceRequirements": [
+    {
+      "type": "OWNERSHIP_PROOF",
+      "name": "Vehicle Certificate of Title / Bill of Sale",
+      "required": true,
+      "description": "Government-issued title document or invoice proving ownership"
+    },
+    {
+      "type": "REGISTRATION_CERTIFICATE",
+      "name": "Vehicle Registration Certificate (RC)",
+      "required": true,
+      "description": "Official state vehicle registration certificate"
+    },
+    {
+      "type": "INSURANCE",
+      "name": "Vehicle Insurance Policy",
+      "required": true,
+      "description": "Active comprehensive motor vehicle insurance policy"
+    },
+    {
+      "type": "INSPECTION_REPORT",
+      "name": "Vehicle Physical Fitness & Inspection Certificate",
+      "required": true,
+      "description": "Authorized inspection report documenting vehicle condition"
+    }
+  ],
+  "lifecycle": {
+    "initialState": "DRAFT",
+    "supportedStates": [
+      "DRAFT",
+      "REGISTERED",
+      "UNDER_VERIFICATION",
+      "VERIFIED",
+      "REJECTED"
+    ],
+    "allowedTransitions": {
+      "DRAFT": ["REGISTERED"],
+      "REGISTERED": ["UNDER_VERIFICATION"],
+      "UNDER_VERIFICATION": ["VERIFIED", "REJECTED"],
+      "VERIFIED": [],
+      "REJECTED": []
+    }
+  },
+  "valuation": {
+    "supportedMethods": [
+      "MARKET_COMPARABLE",
+      "DEPRECIATED_BOOK_VALUE"
+    ],
+    "defaultCurrency": "USD"
+  },
+  "tokenization": {
+    "wholeTokensAllowed": true,
+    "fractionalAllowed": true,
+    "minimumUnit": 1
+  }
+}

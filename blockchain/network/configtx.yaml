@@ -1,0 +1,230 @@
+# =============================================================================
+# TESSERA Fabric Network Configuration
+# Fabric Version: 2.5.16
+# Channel: tessera-channel
+# =============================================================================
+#
+# Organizations:
+#   OrdererMSP    — Fabric orderer organization
+#   IssuerMSP     — Asset issuers, registrars
+#   VerifierMSP   — Evidence verifiers, appraisers
+#   ComplianceMSP — Compliance officers, regulators
+#
+# Roles represented as Fabric CA identities (not separate orgs):
+#   admin         — enrolled via IssuerOrg/VerifierOrg/ComplianceOrg CAs
+#   auditor       — enrolled as client identity in appropriate org
+#   investor      — enrolled as client identity in IssuerOrg (Phase 3)
+#
+# Profile: TesseraApplicationGenesis
+#   Fabric 2.5 channel participation API (no deprecated system channel)
+# =============================================================================
+
+Organizations:
+
+  # -----------------------------------------------------------------------
+  # OrdererOrg — manages the orderer node (Raft consensus)
+  # -----------------------------------------------------------------------
+  - &OrdererOrg
+    Name: OrdererMSP
+    ID: OrdererMSP
+    MSPDir: ../organizations/ordererOrganizations/tessera.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+    OrdererEndpoints:
+      - orderer.tessera.com:7050
+
+  # -----------------------------------------------------------------------
+  # IssuerOrg — asset registration, ownership, issuance
+  # Roles: issuer-admin, issuer-user, auditor-user (all as CA identities)
+  # -----------------------------------------------------------------------
+  - &IssuerOrg
+    Name: IssuerMSP
+    ID: IssuerMSP
+    MSPDir: ../organizations/peerOrganizations/issuer.tessera.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('IssuerMSP.admin', 'IssuerMSP.peer', 'IssuerMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('IssuerMSP.admin', 'IssuerMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('IssuerMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('IssuerMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.issuer.tessera.com
+        Port: 7051
+
+  # -----------------------------------------------------------------------
+  # VerifierOrg — evidence verification, appraisal, valuation review
+  # Roles: verifier-admin, verifier-user (all as CA identities)
+  # -----------------------------------------------------------------------
+  - &VerifierOrg
+    Name: VerifierMSP
+    ID: VerifierMSP
+    MSPDir: ../organizations/peerOrganizations/verifier.tessera.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('VerifierMSP.admin', 'VerifierMSP.peer', 'VerifierMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('VerifierMSP.admin', 'VerifierMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('VerifierMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('VerifierMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.verifier.tessera.com
+        Port: 9051
+
+  # -----------------------------------------------------------------------
+  # ComplianceOrg — regulatory compliance, KYC/AML, reporting
+  # Roles: compliance-admin, compliance-user (all as CA identities)
+  # -----------------------------------------------------------------------
+  - &ComplianceOrg
+    Name: ComplianceMSP
+    ID: ComplianceMSP
+    MSPDir: ../organizations/peerOrganizations/compliance.tessera.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('ComplianceMSP.admin', 'ComplianceMSP.peer', 'ComplianceMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('ComplianceMSP.admin', 'ComplianceMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('ComplianceMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('ComplianceMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.compliance.tessera.com
+        Port: 11051
+
+# =============================================================================
+# Capabilities — Fabric 2.5 feature flags
+# =============================================================================
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+
+  Orderer: &OrdererCapabilities
+    V2_0: true
+
+  Application: &ApplicationCapabilities
+    V2_5: true
+
+# =============================================================================
+# Application defaults — policies for the application channel
+# =============================================================================
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+# =============================================================================
+# Orderer defaults — Raft single-node configuration
+# =============================================================================
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  Addresses:
+    - orderer.tessera.com:7050
+  EtcdRaft:
+    Consenters:
+      - Host: orderer.tessera.com
+        Port: 7050
+        ClientTLSCert: ../organizations/ordererOrganizations/tessera.com/orderers/orderer.tessera.com/tls/server.crt
+        ServerTLSCert: ../organizations/ordererOrganizations/tessera.com/orderers/orderer.tessera.com/tls/server.crt
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: Signature
+      Rule: "OR('OrdererMSP.member')"
+  Capabilities:
+    <<: *OrdererCapabilities
+
+# =============================================================================
+# Channel defaults
+# =============================================================================
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+# =============================================================================
+# Profiles
+# =============================================================================
+Profiles:
+
+  # Fabric 2.5 application channel genesis block.
+  # No system channel — uses channel participation API (osnadmin).
+  # The orderer starts with ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+  # and joins this channel via: osnadmin channel join
+  TesseraApplicationGenesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+      Capabilities: *OrdererCapabilities
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *IssuerOrg
+        - *VerifierOrg
+        - *ComplianceOrg
+      Capabilities: *ApplicationCapabilities
