@@ -56,7 +56,7 @@ function validateRuleStructure(rule, index = 0) {
       errors.push(`${prefix}.condition.operator "${rule.condition.operator}" is invalid. Allowed: ${Object.keys(RULE_OPERATORS).join(', ')}`);
     }
 
-    const unaryOperators = ['IS_TRUE', 'IS_FALSE'];
+    const unaryOperators = ['IS_TRUE', 'IS_FALSE', 'EXISTS', 'NOT_EXISTS'];
     if (!unaryOperators.includes(rule.condition.operator) && rule.condition.value === undefined) {
       errors.push(`${prefix}.condition.value is required for operator "${rule.condition.operator}"`);
     }

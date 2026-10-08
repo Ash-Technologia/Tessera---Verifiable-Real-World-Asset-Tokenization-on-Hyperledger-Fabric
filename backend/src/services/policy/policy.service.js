@@ -125,6 +125,38 @@ class PolicyService {
   isEffective(policy, targetDate = new Date()) {
     return isPolicyEffective(policy, targetDate);
   }
+
+  /**
+   * Evaluates a transfer context against applicable policies.
+   *
+   * @param {object} context - Normalized or raw evaluation context
+   * @param {object} [options]
+   * @returns {object} Canonical Decision Object
+   */
+  evaluate(context, options = {}) {
+    const evaluator = require('./policy.evaluator');
+    return evaluator.evaluate(context, options);
+  }
+
+  /**
+   * Evaluates transfer parameters and associated context.
+   *
+   * @param {object} transferParams - { tokenId, amount, senderId, receiverId }
+   * @param {object} [extraContext]
+   * @param {object} [options]
+   * @returns {object} Canonical Decision Object
+   */
+  evaluateTransfer(transferParams, extraContext = {}, options = {}) {
+    const evaluator = require('./policy.evaluator');
+    const fullContext = {
+      ...extraContext,
+      transfer: {
+        ...(extraContext.transfer || {}),
+        ...transferParams,
+      },
+    };
+    return evaluator.evaluate(fullContext, options);
+  }
 }
 
 module.exports = new PolicyService();

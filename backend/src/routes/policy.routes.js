@@ -46,6 +46,37 @@ router.post('/resolve', (req, res, next) => {
   }
 });
 
+// POST /api/policies/evaluate (Dry-Run Policy Evaluation)
+router.post('/evaluate', (req, res, next) => {
+  try {
+    const { transfer, context, token, asset, sender, receiver, options } = req.body || {};
+
+    if (!req.body || (typeof req.body !== 'object') || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Evaluation payload cannot be empty. Must include transfer or evaluation context.',
+      });
+    }
+
+    const mergedContext = {
+      ...(context || {}),
+      ...(token ? { token } : {}),
+      ...(asset ? { asset } : {}),
+      ...(sender ? { sender } : {}),
+      ...(receiver ? { receiver } : {}),
+      ...(transfer ? { transfer } : {}),
+    };
+
+    const decision = policyService.evaluate(mergedContext, options || {});
+    res.json({
+      success: true,
+      decision,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/policies
 router.get('/', (req, res, next) => {
   try {
