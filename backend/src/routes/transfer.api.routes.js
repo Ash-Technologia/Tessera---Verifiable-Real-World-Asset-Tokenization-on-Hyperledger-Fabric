@@ -14,14 +14,28 @@ async function fabric(req, res, next) {
 // The asset binding is read from Fabric, never accepted from the client.
 router.post('/', fabric, async (req, res, next) => {
   try {
-    const { tokenId, fromOwnerId, fromOwnerMSP, toOwnerId, toOwnerMSP, amount, reason } = req.body;
+    const { tokenId, fromOwnerId, fromOwnerMSP, toOwnerId, toOwnerMSP, amount, reason, context } = req.body;
     if (!tokenId || !fromOwnerId || !fromOwnerMSP || !toOwnerId || !toOwnerMSP || amount === undefined) {
       return res.status(400).json({ success: false, error: 'tokenId, participant identities, and amount are required' });
     }
     const token = await tokenService.getToken(tokenId);
-    const result = await transferService.transferOwnership({ tokenId, assetId: token.assetId, fromOwnerId, fromOwnerMSP, toOwnerId, toOwnerMSP, amount, reason });
-    res.status(201).json({ success: true, txId: result.txId, transfer: result.transfer });
-  } catch (err) { next(err); }
+    const result = await transferService.transferOwnership({ tokenId, assetId: token.assetId, fromOwnerId, fromOwnerMSP, toOwnerId, toOwnerMSP, amount, reason, context });
+    res.status(201).json({ success: true, txId: result.txId, transfer: result.transfer, policyDecision: result.policyDecision });
+  } catch (err) {
+    if (err.isPolicyRejection || (err.message && err.message.startsWith('TRANSFER_REJECTED_BY_POLICY'))) {
+      return res.status(403).json({
+        success: false,
+        error: 'TRANSFER_REJECTED_BY_POLICY',
+        decision: err.decision || 'DENY',
+        policyId: err.policyId,
+        policyVersion: err.policyVersion,
+        scope: err.scope,
+        reasonCodes: err.reasonCodes || [],
+        deniedRules: err.deniedRules || [],
+      });
+    }
+    next(err);
+  }
 });
 router.get('/:transferId', fabric, async (req, res, next) => {
   try { res.json({ success: true, transfer: await transferService.getTransfer(req.params.transferId) }); }

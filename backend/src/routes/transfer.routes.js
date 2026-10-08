@@ -38,6 +38,7 @@ router.post('/transfer', requireFabricConnection, async (req, res, next) => {
     amount,
     reason,
     transferId,
+    context,
   } = req.body;
 
   try {
@@ -63,6 +64,7 @@ router.post('/transfer', requireFabricConnection, async (req, res, next) => {
       amount,
       reason,
       transferId,
+      context,
     });
 
     res.status(201).json({
@@ -70,8 +72,21 @@ router.post('/transfer', requireFabricConnection, async (req, res, next) => {
       message: `Ownership transferred for token ${tokenId}`,
       txId: result.txId,
       transfer: result.transfer,
+      policyDecision: result.policyDecision,
     });
   } catch (err) {
+    if (err.isPolicyRejection || (err.message && err.message.startsWith('TRANSFER_REJECTED_BY_POLICY'))) {
+      return res.status(403).json({
+        success: false,
+        error: 'TRANSFER_REJECTED_BY_POLICY',
+        decision: err.decision || 'DENY',
+        policyId: err.policyId,
+        policyVersion: err.policyVersion,
+        scope: err.scope,
+        reasonCodes: err.reasonCodes || [],
+        deniedRules: err.deniedRules || [],
+      });
+    }
     if (err.statusCode === 404) {
       return res.status(404).json({ success: false, error: err.message });
     }

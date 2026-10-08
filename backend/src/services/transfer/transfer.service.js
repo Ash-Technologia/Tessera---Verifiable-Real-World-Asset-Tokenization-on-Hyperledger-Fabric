@@ -11,6 +11,7 @@
  */
 
 const contractService = require('../fabric/contract.service');
+const { transferPolicyGate, PolicyRejectionError } = require('./transfer.policy.gate');
 const logger = require('../../utils/logger');
 
 class TransferService {
@@ -27,7 +28,8 @@ class TransferService {
    * @param {number} params.amount
    * @param {string} [params.reason]
    * @param {string} [params.transferId]
-   * @returns {Promise<{ txId: string, transfer: object }>}
+   * @param {object} [params.context] - Caller-supplied evaluation context / attestation overrides
+   * @returns {Promise<{ txId: string, transfer: object, policyDecision: object }>}
    */
   async transferOwnership({
     tokenId,
@@ -39,6 +41,7 @@ class TransferService {
     amount,
     reason = '',
     transferId,
+    context = {},
   }) {
     if (!tokenId) throw new Error('tokenId is required');
     if (!assetId) throw new Error('assetId is required');
@@ -62,6 +65,21 @@ class TransferService {
     if (!validation.valid) {
       throw new Error(`TRANSFER_PARTICIPANTS_INVALID: ${validation.checks.join(', ')}`);
     }
+
+    // Phase 6C — Policy Enforcement Gate (Evaluated before ledger mutation)
+    const evaluationContext = await transferPolicyGate.buildTransferEvaluationContext({
+      tokenId,
+      assetId,
+      fromOwnerId,
+      fromOwnerMSP,
+      toOwnerId,
+      toOwnerMSP,
+      amount,
+      participantValidation: validation,
+      extraContext: context,
+    });
+
+    const policyDecision = transferPolicyGate.enforceTransferPolicy(evaluationContext);
 
     const finalTransferId = transferId || `XFR-${tokenId}-${Date.now()}`;
 
@@ -90,11 +108,13 @@ class TransferService {
       fromOwnerId,
       toOwnerId,
       amount,
+      policyId: policyDecision.policyId,
     });
 
     return {
       txId: commitResult.txId,
       transfer: transferRecord,
+      policyDecision,
     };
   }
 
@@ -150,6 +170,16 @@ class TransferService {
    */
   async validateTransferParticipants(fromOwnerId, fromOwnerMSP, toOwnerId, toOwnerMSP) {
     return contractService.validateTransferParticipants(fromOwnerId, fromOwnerMSP, toOwnerId, toOwnerMSP);
+  }
+
+  /**
+   * Helper to build evaluation context from transfer parameters (for dry-run parity verification and testing).
+   *
+   * @param {object} params
+   * @returns {Promise<object>}
+   */
+  async _buildEvaluationContext(params) {
+    return transferPolicyGate.buildTransferEvaluationContext(params);
   }
 }
 
