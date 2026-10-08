@@ -862,6 +862,89 @@ class ContractService {
     const resultBytes = await contract.evaluateTransaction('ValidateTransferParticipants', fromOwnerId, fromOwnerMSP, toOwnerId, toOwnerMSP);
     return JSON.parse(utf8Decoder.decode(resultBytes));
   }
+
+  // ============================================================
+  // Phase 7A — Asset Lifecycle State Machine & History
+  // ============================================================
+
+  /**
+   * Atomically transitions an asset's lifecycle state and creates an immutable on-chain record.
+   *
+   * @param {string} assetId
+   * @param {string} toState
+   * @param {string} reason
+   * @param {object} [metadata]
+   * @param {object} [actor]
+   * @returns {Promise<{ txId: string, asset: object, transition: object }>}
+   */
+  async transitionAssetLifecycle(assetId, toState, reason, metadata = {}, actor = {}) {
+    logger.info('Submitting TransitionAssetLifecycle transaction', { assetId, toState, reason });
+    const contract = this._getContract();
+
+    const requestPayload = {
+      assetId,
+      toState,
+      reason,
+      actorId: actor.actorId || actor.identity || undefined,
+      actorMSP: actor.actorMSP || actor.mspId || undefined,
+      actorRole: actor.actorRole || actor.role || undefined,
+      metadata: metadata || {},
+    };
+
+    let result;
+    try {
+      result = await contract.submitTransaction('TransitionAssetLifecycle', JSON.stringify(requestPayload));
+    } catch (err) {
+      this._rethrowChaincodeError(err);
+    }
+
+    const decoded = result && result.length > 0 ? utf8Decoder.decode(result) : '{}';
+    const transition = JSON.parse(decoded);
+
+    // Read updated asset
+    const asset = await this.readAsset(assetId);
+
+    logger.info('TransitionAssetLifecycle committed', {
+      assetId,
+      fromState: transition.fromState,
+      toState: transition.toState,
+      transitionId: transition.transitionId,
+    });
+
+    return {
+      txId: transition.transactionId || 'committed',
+      asset,
+      transition,
+    };
+  }
+
+  /**
+   * Retrieves the current lifecycle state summary for an asset.
+   *
+   * @param {string} assetId
+   * @returns {Promise<object>}
+   */
+  async getAssetLifecycle(assetId) {
+    logger.debug('Evaluating GetAssetLifecycle query', { assetId });
+    const contract = this._getContract();
+    const resultBytes = await contract.evaluateTransaction('GetAssetLifecycle', assetId);
+    return JSON.parse(utf8Decoder.decode(resultBytes));
+  }
+
+  /**
+   * Retrieves the full chronological lifecycle transition history for an asset.
+   *
+   * @param {string} assetId
+   * @returns {Promise<Array<object>>}
+   */
+  async getAssetLifecycleHistory(assetId) {
+    logger.debug('Evaluating GetAssetLifecycleHistory query', { assetId });
+    const contract = this._getContract();
+    const resultBytes = await contract.evaluateTransaction('GetAssetLifecycleHistory', assetId);
+    const decoded = utf8Decoder.decode(resultBytes);
+    return decoded ? JSON.parse(decoded) : [];
+  }
 }
 
 module.exports = new ContractService();
+

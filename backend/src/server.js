@@ -20,6 +20,7 @@ const transferRoutes = require('./routes/transfer.routes');
 const ownerRoutes = require('./routes/owner.routes');
 const transferApiRoutes = require('./routes/transfer.api.routes');
 const policyRoutes = require('./routes/policy.routes');
+const lifecycleRoutes = require('./routes/lifecycle.routes');
 const gatewayService = require('./services/fabric/gateway.service');
 const templateService = require('./services/templates/template.service');
 const minioService = require('./services/storage/minio.service');
@@ -79,6 +80,7 @@ app.use('/api/owners', ownerRoutes);
 app.use('/api/transfers', transferApiRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/policies', policyRoutes);
+app.use('/api/assets/:assetId/lifecycle', lifecycleRoutes);
 
 // ============================================================
 // Root information endpoint

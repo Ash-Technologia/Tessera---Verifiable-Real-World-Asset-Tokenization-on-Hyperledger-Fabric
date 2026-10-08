@@ -27,9 +27,10 @@ const (
 	DocTypeValuation     = "valuation"
 	DocTypeTokenApproval = "approval"
 	DocTypeToken         = "token"
-	DocTypeAuditEvent    = "audit"
-	DocTypeOwnership     = "ownership"
-	DocTypeTransfer      = "transfer"
+	DocTypeAuditEvent          = "audit"
+	DocTypeOwnership           = "ownership"
+	DocTypeTransfer            = "transfer"
+	DocTypeLifecycleTransition = "lifecycle_transition"
 )
 
 // Asset lifecycle states
@@ -40,15 +41,16 @@ const (
 	StatusVerified          = "VERIFIED"
 	StatusRejected          = "REJECTED"
 	StatusTokenized         = "TOKENIZED"
+	StatusRestricted        = "RESTRICTED"
+	StatusPledged           = "PLEDGED"
+	StatusRedeemed          = "REDEEMED"
+	StatusRetired           = "RETIRED"
 
 	// Retained for compatibility/future
-	StatusApproved   = "APPROVED"
-	StatusValued     = "VALUED"
-	StatusActive     = "ACTIVE"
-	StatusRestricted = "RESTRICTED"
-	StatusFrozen     = "FROZEN"
-	StatusRedeemed   = "REDEEMED"
-	StatusRetired    = "RETIRED"
+	StatusApproved = "APPROVED"
+	StatusValued   = "VALUED"
+	StatusActive   = "ACTIVE"
+	StatusFrozen   = "FROZEN"
 )
 
 // Evidence status constants
@@ -267,4 +269,33 @@ type AuditEvent struct {
 	Timestamp       string `json:"timestamp"`
 	Reason          string `json:"reason"`
 	RelatedEntityID string `json:"relatedEntityId"`
+}
+
+// LifecycleTransition represents an immutable lifecycle transition record on ledger.
+type LifecycleTransition struct {
+	DocType        string                 `json:"docType"`
+	TransitionID   string                 `json:"transitionId"`
+	AssetID        string                 `json:"assetId"`
+	FromState      string                 `json:"fromState"`
+	ToState        string                 `json:"toState"`
+	ActorID        string                 `json:"actorId"`
+	ActorMSP       string                 `json:"actorMSP"`
+	ActorRole      string                 `json:"actorRole,omitempty"`
+	Reason         string                 `json:"reason"`
+	Timestamp      string                 `json:"timestamp"`
+	TransactionID  string                 `json:"transactionId"`
+	SequenceNumber int                    `json:"sequenceNumber"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// AssetLifecycleView represents the current lifecycle status and summary of an asset.
+type AssetLifecycleView struct {
+	AssetID           string   `json:"assetId"`
+	CurrentState      string   `json:"currentState"`
+	AllowedNextStates []string `json:"allowedNextStates"`
+	IsTerminal        bool     `json:"isTerminal"`
+	LastUpdated       string   `json:"lastUpdated"`
+	Owner             string   `json:"owner"`
+	TemplateID        string   `json:"templateId"`
+	TransitionsCount  int      `json:"transitionsCount"`
 }

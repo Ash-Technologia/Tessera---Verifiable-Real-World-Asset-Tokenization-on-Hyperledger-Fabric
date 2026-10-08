@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
@@ -85,6 +87,7 @@ func (c *AssetContract) CreateAsset(
 	if err != nil {
 		clientID = "unknown-client"
 	}
+	mspID, _ := ctx.GetClientIdentity().GetMSPID()
 
 	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
 	if err != nil {
@@ -116,6 +119,8 @@ func (c *AssetContract) CreateAsset(
 	if err := ctx.GetStub().PutState(assetID, assetBytes); err != nil {
 		return fmt.Errorf("failed to write asset %q to ledger: %w", assetID, err)
 	}
+
+	_, _ = c.recordLifecycleTransition(ctx, assetID, StatusDraft, StatusRegistered, clientID, mspID, "ISSUER", "Asset created and registered on ledger", nil)
 
 	return nil
 }
@@ -232,7 +237,130 @@ func (c *AssetContract) GetAssetTemplateRef(
 	return string(refBytes), nil
 }
 
-// UpdateAssetStatus transitions an asset to a new lifecycle state.
+// =============================================================================
+// Asset Lifecycle Operations — Phase 7A
+// =============================================================================
+
+// GetAllowedNextStates returns the allowed next lifecycle states for a given state.
+func (c *AssetContract) GetAllowedNextStates(currentState string) []string {
+	switch currentState {
+	case StatusDraft:
+		return []string{StatusRegistered}
+	case StatusRegistered:
+		return []string{StatusUnderVerification}
+	case StatusUnderVerification:
+		return []string{StatusVerified, StatusRejected}
+	case StatusVerified:
+		return []string{StatusTokenized, StatusRestricted, StatusPledged, StatusRedeemed, StatusRetired}
+	case StatusTokenized:
+		return []string{StatusRestricted, StatusPledged, StatusRedeemed, StatusRetired}
+	case StatusPledged:
+		return []string{StatusTokenized, StatusVerified, StatusRestricted, StatusRetired}
+	case StatusRestricted:
+		return []string{StatusTokenized, StatusVerified, StatusPledged, StatusRetired}
+	case StatusRedeemed:
+		return []string{StatusRetired}
+	case StatusRejected, StatusRetired:
+		return []string{} // Terminal
+	default:
+		return []string{}
+	}
+}
+
+// IsValidLifecycleTransition checks if a transition from fromState to toState is allowed.
+func (c *AssetContract) IsValidLifecycleTransition(fromState, toState string) bool {
+	if fromState == toState || toState == "" {
+		return false
+	}
+	allowed := c.GetAllowedNextStates(fromState)
+	for _, s := range allowed {
+		if s == toState {
+			return true
+		}
+	}
+	return false
+}
+
+// recordLifecycleTransition creates an immutable LifecycleTransition record on ledger.
+func (c *AssetContract) recordLifecycleTransition(
+	ctx contractapi.TransactionContextInterface,
+	assetID string,
+	fromState string,
+	toState string,
+	actorID string,
+	actorMSP string,
+	actorRole string,
+	reason string,
+	metadata map[string]interface{},
+) (*LifecycleTransition, error) {
+	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transaction timestamp: %w", err)
+	}
+	now := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos)).UTC().Format(time.RFC3339)
+	txID := ctx.GetStub().GetTxID()
+
+	// Get and increment sequence number
+	seqKey := fmt.Sprintf("asset_lifecycle_seq_%s", assetID)
+	seqBytes, err := ctx.GetStub().GetState(seqKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lifecycle sequence: %w", err)
+	}
+	seq := 1
+	if seqBytes != nil {
+		seqVal, parseErr := strconv.Atoi(string(seqBytes))
+		if parseErr == nil {
+			seq = seqVal + 1
+		}
+	}
+	if err := ctx.GetStub().PutState(seqKey, []byte(strconv.Itoa(seq))); err != nil {
+		return nil, fmt.Errorf("failed to update lifecycle sequence: %w", err)
+	}
+
+	transitionID := fmt.Sprintf("TRANS-%s-%06d", assetID, seq)
+
+	transition := LifecycleTransition{
+		DocType:        DocTypeLifecycleTransition,
+		TransitionID:   transitionID,
+		AssetID:        assetID,
+		FromState:      fromState,
+		ToState:        toState,
+		ActorID:        actorID,
+		ActorMSP:       actorMSP,
+		ActorRole:      actorRole,
+		Reason:         reason,
+		Timestamp:      now,
+		TransactionID:  txID,
+		SequenceNumber: seq,
+		Metadata:       metadata,
+	}
+
+	transBytes, err := json.Marshal(transition)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize lifecycle transition: %w", err)
+	}
+
+	transKey := "lifecycle_transition_" + transitionID
+	if err := ctx.GetStub().PutState(transKey, transBytes); err != nil {
+		return nil, fmt.Errorf("failed to write lifecycle transition to ledger: %w", err)
+	}
+
+	// Composite key for deterministic chronological retrieval
+	indexKey, err := ctx.GetStub().CreateCompositeKey("asset~lifecycle~seq", []string{assetID, fmt.Sprintf("%06d", seq), transitionID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create composite key: %w", err)
+	}
+	if err := ctx.GetStub().PutState(indexKey, []byte{0x00}); err != nil {
+		return nil, fmt.Errorf("failed to index lifecycle transition: %w", err)
+	}
+
+	// Also record generic AuditEvent for comprehensive audit trail
+	_ = c.recordAuditEvent(ctx, "ASSET_LIFECYCLE_TRANSITION", assetID, actorID, actorMSP, now, reason, transitionID)
+
+	return &transition, nil
+}
+
+// UpdateAssetStatus transitions an asset to a new lifecycle state (legacy & direct caller support).
 func (c *AssetContract) UpdateAssetStatus(
 	ctx contractapi.TransactionContextInterface,
 	assetID string,
@@ -251,28 +379,15 @@ func (c *AssetContract) UpdateAssetStatus(
 		return err
 	}
 
-	// Validate allowed state transitions
 	current := asset.Status
-	switch current {
-	case StatusDraft:
-		if newStatus != StatusRegistered {
-			return fmt.Errorf("invalid transition: %s cannot transition to %s (allowed: %s)", current, newStatus, StatusRegistered)
-		}
-	case StatusRegistered:
-		if newStatus != StatusUnderVerification && newStatus != StatusRegistered {
-			return fmt.Errorf("invalid transition: %s cannot transition to %s (allowed: %s)", current, newStatus, StatusUnderVerification)
-		}
-	case StatusUnderVerification:
-		if newStatus != StatusVerified && newStatus != StatusRejected {
-			return fmt.Errorf("invalid transition: %s cannot transition to %s (allowed: %s, %s)", current, newStatus, StatusVerified, StatusRejected)
-		}
-	case StatusVerified:
-		if newStatus != StatusTokenized {
-			return fmt.Errorf("invalid transition: %s cannot transition to %s (allowed: %s)", current, newStatus, StatusTokenized)
-		}
-	case StatusRejected:
-		// Terminal
-		return fmt.Errorf("asset %q is REJECTED: rejected assets cannot transition to other states", assetID)
+	// If same status, accept gracefully for legacy compatibility
+	if current == newStatus {
+		return nil
+	}
+
+	// Validate allowed state transitions
+	if !c.IsValidLifecycleTransition(current, newStatus) {
+		return fmt.Errorf("invalid transition: %s cannot transition to %s (allowed: %v)", current, newStatus, c.GetAllowedNextStates(current))
 	}
 
 	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
@@ -284,13 +399,264 @@ func (c *AssetContract) UpdateAssetStatus(
 	asset.Status = newStatus
 	asset.UpdatedAt = now
 
+	if asset.Attributes == nil {
+		asset.Attributes = make(map[string]interface{})
+	}
+	if newStatus == StatusPledged {
+		asset.Attributes["pledged"] = true
+		asset.Attributes["isPledged"] = true
+	} else if current == StatusPledged {
+		asset.Attributes["pledged"] = false
+		asset.Attributes["isPledged"] = false
+	}
+	if newStatus == StatusRestricted {
+		asset.Attributes["restricted"] = true
+		asset.Attributes["isRestricted"] = true
+	} else if current == StatusRestricted {
+		asset.Attributes["restricted"] = false
+		asset.Attributes["isRestricted"] = false
+	}
+
 	assetBytes, err := json.Marshal(asset)
 	if err != nil {
 		return fmt.Errorf("failed to serialize asset %q: %w", assetID, err)
 	}
 
-	return ctx.GetStub().PutState(assetID, assetBytes)
+	if err := ctx.GetStub().PutState(assetID, assetBytes); err != nil {
+		return err
+	}
+
+	clientID, _ := ctx.GetClientIdentity().GetID()
+	mspID, _ := ctx.GetClientIdentity().GetMSPID()
+	reason := remarks
+	if strings.TrimSpace(reason) == "" {
+		reason = fmt.Sprintf("Status updated to %s", newStatus)
+	}
+
+	_, _ = c.recordLifecycleTransition(ctx, assetID, current, newStatus, clientID, mspID, "", reason, nil)
+	return nil
 }
+
+// TransitionAssetLifecycleRequest represents the payload for TransitionAssetLifecycle.
+type TransitionAssetLifecycleRequest struct {
+	AssetID   string                 `json:"assetId"`
+	ToState   string                 `json:"toState"`
+	Reason    string                 `json:"reason"`
+	ActorID   string                 `json:"actorId,omitempty"`
+	ActorMSP  string                 `json:"actorMSP,omitempty"`
+	ActorRole string                 `json:"actorRole,omitempty"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// TransitionAssetLifecycle atomically transitions an asset's lifecycle state and creates an immutable transition record.
+func (c *AssetContract) TransitionAssetLifecycle(
+	ctx contractapi.TransactionContextInterface,
+	transitionRequestJSON string,
+) (string, error) {
+	if transitionRequestJSON == "" {
+		return "", fmt.Errorf("transitionRequestJSON cannot be empty")
+	}
+
+	var req TransitionAssetLifecycleRequest
+	if err := json.Unmarshal([]byte(transitionRequestJSON), &req); err != nil {
+		return "", fmt.Errorf("failed to parse transitionRequestJSON: %w", err)
+	}
+
+	if req.AssetID == "" {
+		return "", fmt.Errorf("assetId is required")
+	}
+	if req.ToState == "" {
+		return "", fmt.Errorf("toState is required")
+	}
+	if strings.TrimSpace(req.Reason) == "" {
+		return "", fmt.Errorf("EMPTY_TRANSITION_REASON: reason is required and cannot be empty")
+	}
+
+	asset, err := c.ReadAsset(ctx, req.AssetID)
+	if err != nil {
+		return "", err
+	}
+
+	fromState := asset.Status
+	toState := req.ToState
+
+	// Same-state check
+	if fromState == toState {
+		return "", fmt.Errorf("INVALID_LIFECYCLE_TRANSITION: same-state transition from %s to %s is not permitted", fromState, toState)
+	}
+
+	// Terminal state check
+	if fromState == StatusRejected || fromState == StatusRetired {
+		return "", fmt.Errorf("INVALID_LIFECYCLE_TRANSITION: asset %q is in terminal state %s and cannot transition", req.AssetID, fromState)
+	}
+
+	// Validate against state machine
+	if !c.IsValidLifecycleTransition(fromState, toState) {
+		allowed := c.GetAllowedNextStates(fromState)
+		return "", fmt.Errorf("INVALID_LIFECYCLE_TRANSITION: transition from %s to %s is not permitted (allowed: %v)", fromState, toState, allowed)
+	}
+
+	// Authenticated actor identity from Fabric transaction context
+	callerID, _ := ctx.GetClientIdentity().GetID()
+	callerMSP, _ := ctx.GetClientIdentity().GetMSPID()
+
+	actorID := callerID
+	if req.ActorID != "" {
+		actorID = req.ActorID
+	}
+	actorMSP := callerMSP
+	if req.ActorMSP != "" {
+		actorMSP = req.ActorMSP
+	}
+
+	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
+	if err != nil {
+		return "", fmt.Errorf("failed to get transaction timestamp: %w", err)
+	}
+	now := time.Unix(txTimestamp.Seconds, int64(txTimestamp.Nanos)).UTC().Format(time.RFC3339)
+
+	// Update asset state and attributes
+	asset.Status = toState
+	asset.UpdatedAt = now
+	if asset.Attributes == nil {
+		asset.Attributes = make(map[string]interface{})
+	}
+
+	if toState == StatusPledged {
+		asset.Attributes["pledged"] = true
+		asset.Attributes["isPledged"] = true
+	} else if fromState == StatusPledged {
+		asset.Attributes["pledged"] = false
+		asset.Attributes["isPledged"] = false
+	}
+
+	if toState == StatusRestricted {
+		asset.Attributes["restricted"] = true
+		asset.Attributes["isRestricted"] = true
+	} else if fromState == StatusRestricted {
+		asset.Attributes["restricted"] = false
+		asset.Attributes["isRestricted"] = false
+	}
+
+	assetBytes, err := json.Marshal(asset)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize updated asset: %w", err)
+	}
+	if err := ctx.GetStub().PutState(req.AssetID, assetBytes); err != nil {
+		return "", fmt.Errorf("failed to write updated asset to ledger: %w", err)
+	}
+
+	// Record immutable transition history
+	transition, err := c.recordLifecycleTransition(
+		ctx,
+		req.AssetID,
+		fromState,
+		toState,
+		actorID,
+		actorMSP,
+		req.ActorRole,
+		req.Reason,
+		req.Metadata,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	transBytes, err := json.Marshal(transition)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize transition: %w", err)
+	}
+	return string(transBytes), nil
+}
+
+// GetAssetLifecycle retrieves the current lifecycle view for an asset.
+func (c *AssetContract) GetAssetLifecycle(
+	ctx contractapi.TransactionContextInterface,
+	assetID string,
+) (*AssetLifecycleView, error) {
+	if assetID == "" {
+		return nil, fmt.Errorf("assetId is required")
+	}
+
+	asset, err := c.ReadAsset(ctx, assetID)
+	if err != nil {
+		return nil, err
+	}
+
+	seqKey := fmt.Sprintf("asset_lifecycle_seq_%s", assetID)
+	seqBytes, _ := ctx.GetStub().GetState(seqKey)
+	transCount := 0
+	if seqBytes != nil {
+		transCount, _ = strconv.Atoi(string(seqBytes))
+	}
+
+	allowed := c.GetAllowedNextStates(asset.Status)
+	isTerminal := asset.Status == StatusRejected || asset.Status == StatusRetired
+
+	return &AssetLifecycleView{
+		AssetID:           asset.AssetID,
+		CurrentState:      asset.Status,
+		AllowedNextStates: allowed,
+		IsTerminal:        isTerminal,
+		LastUpdated:       asset.UpdatedAt,
+		Owner:             asset.Owner,
+		TemplateID:        asset.TemplateID,
+		TransitionsCount:  transCount,
+	}, nil
+}
+
+// GetAssetLifecycleHistory retrieves all lifecycle transition records for an asset in deterministic order.
+func (c *AssetContract) GetAssetLifecycleHistory(
+	ctx contractapi.TransactionContextInterface,
+	assetID string,
+) (string, error) {
+	if assetID == "" {
+		return "", fmt.Errorf("assetId is required")
+	}
+
+	iterator, err := ctx.GetStub().GetStateByPartialCompositeKey("asset~lifecycle~seq", []string{assetID})
+	if err != nil {
+		return "", fmt.Errorf("failed to query lifecycle history: %w", err)
+	}
+	defer iterator.Close()
+
+	var history []*LifecycleTransition
+	for iterator.HasNext() {
+		response, err := iterator.Next()
+		if err != nil {
+			return "", fmt.Errorf("failed reading next lifecycle transition: %w", err)
+		}
+
+		_, compositeParts, err := ctx.GetStub().SplitCompositeKey(response.Key)
+		if err != nil || len(compositeParts) < 3 {
+			continue
+		}
+		transitionID := compositeParts[2]
+		transKey := "lifecycle_transition_" + transitionID
+
+		transBytes, err := ctx.GetStub().GetState(transKey)
+		if err != nil || transBytes == nil {
+			continue
+		}
+
+		var trans LifecycleTransition
+		if err := json.Unmarshal(transBytes, &trans); err == nil {
+			history = append(history, &trans)
+		}
+	}
+
+	if history == nil {
+		history = make([]*LifecycleTransition, 0)
+	}
+
+	historyJSON, err := json.Marshal(history)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize lifecycle history: %w", err)
+	}
+
+	return string(historyJSON), nil
+}
+
 
 // =============================================================================
 // Evidence Operations — Phase 3
@@ -2035,6 +2401,11 @@ func (c *AssetContract) TokenizeAsset(
 	assetBytes, _ := json.Marshal(asset)
 	ctx.GetStub().PutState(req.AssetID, assetBytes)
 
+	_, _ = c.recordLifecycleTransition(ctx, req.AssetID, StatusVerified, StatusTokenized, clientID, mspID, "ISSUER", "Asset tokenized on ledger", map[string]interface{}{
+		"tokenId":   req.TokenID,
+		"tokenType": req.TokenType,
+	})
+
 	// Record audit event
 	if err := c.recordAuditEvent(ctx, "TOKEN_CREATED", req.AssetID, clientID, mspID, nowStr, "Token created successfully", req.TokenID); err != nil {
 		return err
@@ -2480,7 +2851,24 @@ func (c *AssetContract) RecordVerification(
 		return fmt.Errorf("failed to serialize updated asset: %w", err)
 	}
 
-	return ctx.GetStub().PutState(v.AssetID, updatedAssetBytes)
+	if err := ctx.GetStub().PutState(v.AssetID, updatedAssetBytes); err != nil {
+		return err
+	}
+
+	verifReason := v.Remarks
+	if strings.TrimSpace(verifReason) == "" {
+		verifReason = fmt.Sprintf("Verification decision: %s", v.Decision)
+	}
+	toState := StatusVerified
+	if v.Decision != VerificationApproved {
+		toState = StatusRejected
+	}
+	_, _ = c.recordLifecycleTransition(ctx, v.AssetID, StatusUnderVerification, toState, callerID, callerMSP, "VERIFIER", verifReason, map[string]interface{}{
+		"verificationId": v.VerificationID,
+		"decision":       v.Decision,
+	})
+
+	return nil
 }
 
 // GetVerificationHistory retrieves all verification records for an asset in chronological order.
