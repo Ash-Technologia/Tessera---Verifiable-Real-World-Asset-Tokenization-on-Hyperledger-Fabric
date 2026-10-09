@@ -1,7 +1,5 @@
-// Evidence domain API bindings (Phase 8A). Read bindings only;
-// upload workflows arrive in a later phase.
-
-import { apiGet, apiPatch, unwrap } from './client.js';
+import { apiGet, apiPatch, apiPost, unwrap } from './client.js';
+import { API_BASE_URL } from '../../lib/config.js';
 
 const enc = encodeURIComponent;
 const assetPath = (assetId) => `/assets/${enc(assetId)}`;
@@ -20,9 +18,22 @@ export const evidenceApi = {
     return unwrap(body, 'evidence');
   },
 
+  /**
+   * POST /api/assets/:assetId/evidence
+   * Supports FormData (file attachment) or plain JSON object (content field).
+   */
+  async submit(assetId, payload) {
+    return apiPost(`${assetPath(assetId)}/evidence`, payload);
+  },
+
   /** GET /api/assets/:assetId/evidence/:evidenceId/verify-integrity */
   async verifyIntegrity(assetId, evidenceId) {
     return apiGet(`${assetPath(assetId)}/evidence/${enc(evidenceId)}/verify-integrity`);
+  },
+
+  /** Returns absolute URL for downloading evidence file */
+  getDownloadUrl(assetId, evidenceId) {
+    return `${API_BASE_URL}/assets/${enc(assetId)}/evidence/${enc(evidenceId)}/download`;
   },
 };
 
@@ -32,11 +43,21 @@ export const verificationApi = {
     return apiGet(`${assetPath(assetId)}/verification-readiness`);
   },
 
+  /**
+   * POST /api/assets/:assetId/verify
+   * Records independent Maker-Checker verification attestation.
+   */
+  async verify(assetId, payload) {
+    return apiPost(`${assetPath(assetId)}/verify`, payload);
+  },
+
   /** GET /api/assets/:assetId/verifications → array */
   async getHistory(assetId) {
     const body = await apiGet(`${assetPath(assetId)}/verifications`);
     if (Array.isArray(body)) return body;
-    const list = unwrap(body, 'verifications') ?? unwrap(body, 'history');
+    if (Array.isArray(body?.history)) return body.history;
+    if (Array.isArray(body?.verifications)) return body.verifications;
+    const list = unwrap(body, 'verifications');
     return Array.isArray(list) ? list : [];
   },
 
@@ -45,3 +66,4 @@ export const verificationApi = {
     return apiPatch(`${assetPath(assetId)}/status`, { status, remarks });
   },
 };
+

@@ -11,12 +11,15 @@ const STATUS_TONES = {
   VALID: 'green',
   COMPLETED: 'green',
   READY: 'green',
+  READY_FOR_VERIFICATION: 'green',
   // Pending / transitional
   DRAFT: 'neutral',
   REGISTERED: 'blue',
   SUBMITTED: 'blue',
   UNDER_VERIFICATION: 'amber',
+  UNDER_REVIEW: 'amber',
   PENDING: 'amber',
+  NOT_READY: 'amber',
   // Restrictive / negative
   RESTRICTED: 'red',
   PLEDGED: 'gold',

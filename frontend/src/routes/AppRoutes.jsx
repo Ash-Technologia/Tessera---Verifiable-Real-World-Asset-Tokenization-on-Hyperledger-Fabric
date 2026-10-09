@@ -4,6 +4,7 @@ import { Home } from '../pages/Home.jsx';
 import { Dashboard } from '../pages/Dashboard.jsx';
 import { AssetList } from '../pages/AssetList.jsx';
 import { AssetOverview } from '../pages/AssetOverview.jsx';
+import { EvidenceWorkspace } from '../pages/EvidenceWorkspace.jsx';
 import { PhasePlaceholder } from '../pages/PhasePlaceholder.jsx';
 import { NotFound } from '../pages/NotFound.jsx';
 
@@ -21,7 +22,7 @@ export function AppRoutes() {
       <Route path="/templates" element={<PhasePlaceholder phase="8B" title="Templates" description="Template catalogue browsing arrives in Phase 8B." />} />
       <Route path="/assets" element={<AssetList />} />
       <Route path="/assets/:assetId" element={<AssetOverview />} />
-      <Route path="/assets/:assetId/evidence" element={workspacePlaceholder('evidence', '8C', 'Evidence submission and verification workspace arrives in Phase 8C.')} />
+      <Route path="/assets/:assetId/evidence" element={<EvidenceWorkspace />} />
       <Route path="/assets/:assetId/valuation" element={workspacePlaceholder('valuation', '8D', 'Valuation review and approval workspace arrives in Phase 8D.')} />
       <Route path="/assets/:assetId/token" element={workspacePlaceholder('token', '8D', 'Tokenization workspace arrives in Phase 8D.')} />
       <Route path="/assets/:assetId/ownership" element={workspacePlaceholder('ownership', '8E', 'Ownership and holdings workspace arrives in Phase 8E.')} />

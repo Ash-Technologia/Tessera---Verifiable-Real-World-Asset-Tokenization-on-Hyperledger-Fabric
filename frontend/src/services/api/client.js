@@ -121,6 +121,7 @@ export async function apiRequest(path, options = {}) {
     else externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
   }
 
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
   let response;
   try {
     response = await fetch(url.toString(), {
@@ -128,10 +129,10 @@ export async function apiRequest(path, options = {}) {
       signal: controller.signal,
       headers: {
         Accept: 'application/json',
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(body !== undefined && !isFormData ? { 'Content-Type': 'application/json' } : {}),
         ...headers,
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body !== undefined ? (isFormData ? body : JSON.stringify(body)) : undefined,
     });
   } catch (err) {
     clearTimeout(timeout);
