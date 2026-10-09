@@ -2,7 +2,7 @@
 // Real endpoints only — there is intentionally no list endpoint on the
 // backend, so bulk reads resolve a caller-supplied ID set (404-tolerant).
 
-import { apiGet, apiPatch, apiPost, unwrap } from './client.js';
+import { apiGet, apiPatch, apiPost, unwrap, ApiErrorKind } from './client.js';
 
 const enc = encodeURIComponent;
 
@@ -54,5 +54,31 @@ export const assetsApi = {
       else missing.push(ids[index]);
     });
     return { found, missing };
+  },
+
+  /**
+   * Attempts to list assets from the backend if an authoritative list endpoint exists.
+   * If the backend returns 404 (because GET /api/assets is not exposed),
+   * returns { supported: false, assets: [] } without failing.
+   * If an asset list is returned, returns { supported: true, assets }.
+   * @returns {Promise<{ supported: boolean, assets: Array }>}
+   */
+  async listAssets() {
+    try {
+      const body = await apiGet('/assets');
+      const list = unwrap(body, 'assets');
+      if (Array.isArray(list)) {
+        return { supported: true, assets: list };
+      }
+      if (Array.isArray(body)) {
+        return { supported: true, assets: body };
+      }
+      return { supported: true, assets: [] };
+    } catch (err) {
+      if (err?.status === 404 || err?.kind === ApiErrorKind.NOT_FOUND) {
+        return { supported: false, assets: [] };
+      }
+      throw err;
+    }
   },
 };

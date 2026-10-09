@@ -40,4 +40,17 @@ describe('assets API service', () => {
     vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(200, { success: true, exists: true })));
     await expect(assetsApi.assetExists('VEH-2025-001')).resolves.toBe(true);
   });
+
+  it('listAssets returns supported: true when backend exposes GET /api/assets', async () => {
+    const assets = [{ assetId: 'VEH-2025-001' }];
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(200, { success: true, assets })));
+    const result = await assetsApi.listAssets();
+    expect(result).toEqual({ supported: true, assets });
+  });
+
+  it('listAssets returns supported: false when backend returns 404 (no enumeration)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(404, { success: false, error: 'Route not found' })));
+    const result = await assetsApi.listAssets();
+    expect(result).toEqual({ supported: false, assets: [] });
+  });
 });

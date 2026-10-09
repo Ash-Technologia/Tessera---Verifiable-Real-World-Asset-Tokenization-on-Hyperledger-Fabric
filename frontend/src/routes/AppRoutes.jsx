@@ -1,6 +1,7 @@
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { Home } from '../pages/Home.jsx';
+import { Dashboard } from '../pages/Dashboard.jsx';
 import { AssetList } from '../pages/AssetList.jsx';
 import { AssetOverview } from '../pages/AssetOverview.jsx';
 import { PhasePlaceholder } from '../pages/PhasePlaceholder.jsx';
@@ -16,7 +17,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/dashboard" element={<PhasePlaceholder phase="8B" title="Dashboard" description="Portfolio analytics and network overview arrive in Phase 8B." />} />
+      <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/templates" element={<PhasePlaceholder phase="8B" title="Templates" description="Template catalogue browsing arrives in Phase 8B." />} />
       <Route path="/assets" element={<AssetList />} />
       <Route path="/assets/:assetId" element={<AssetOverview />} />

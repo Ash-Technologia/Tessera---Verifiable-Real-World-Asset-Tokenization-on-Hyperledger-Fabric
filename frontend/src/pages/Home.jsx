@@ -50,8 +50,10 @@ export function Home() {
 
       <div className="ts-grid-2">
         <Card title="Asset registry">
-          <p className="ts-body">Browse seeded on-ledger assets with live status, lifecycle and token state.</p>
-          <Link to="/assets">Open asset registry →</Link>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', margin: '0.5rem 0' }}>
+            <Link to="/assets">Open asset registry →</Link>
+            <Link to="/dashboard">Open platform dashboard →</Link>
+          </div>
           {backend.data ? (
             <MetaList
               entries={[

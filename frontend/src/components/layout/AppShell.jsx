@@ -11,7 +11,7 @@ const NAV_SECTIONS = [
     section: 'Overview',
     links: [
       { to: '/', label: 'Home', end: true },
-      { to: '/dashboard', label: 'Dashboard', phase: '8B' },
+      { to: '/dashboard', label: 'Dashboard' },
     ],
   },
   {
