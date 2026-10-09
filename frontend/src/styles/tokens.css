@@ -1,0 +1,64 @@
+/* TESSERA design tokens (Phase 8A).
+   Enterprise RWA direction: light surfaces, deep navy/slate, restrained
+   accents, semantic status colors. No neon, no heavy gradients. */
+
+:root {
+  /* Surfaces */
+  --ts-bg: #f7f8fa;
+  --ts-surface: #ffffff;
+  --ts-surface-alt: #eef1f5;
+  --ts-border: #dde3ea;
+  --ts-border-strong: #c3ccd7;
+
+  /* Ink */
+  --ts-ink: #16213a;
+  --ts-ink-soft: #3d4a63;
+  --ts-ink-muted: #6b7689;
+  --ts-ink-faint: #98a2b3;
+
+  /* Primary: deep navy / dark slate */
+  --ts-navy-900: #101c33;
+  --ts-navy-800: #16294b;
+  --ts-navy-700: #1f3a66;
+  --ts-primary: #1f3a66;
+  --ts-primary-hover: #16294b;
+  --ts-on-primary: #ffffff;
+
+  /* Accents (restrained) */
+  --ts-accent-blue: #2563b8;
+  --ts-accent-teal: #0e7c7b;
+  --ts-accent-gold: #9a7418;
+  --ts-accent-purple: #6b4fa8;
+
+  /* Status */
+  --ts-success: #18794e;
+  --ts-success-bg: #e6f4ec;
+  --ts-warning: #9a6200;
+  --ts-warning-bg: #fdf1dc;
+  --ts-danger: #b4232a;
+  --ts-danger-bg: #fbe9ea;
+  --ts-neutral: #5b6472;
+  --ts-neutral-bg: #eef1f5;
+
+  /* Typography */
+  --ts-font-sans: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --ts-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ts-text-xs: 0.72rem;
+  --ts-text-sm: 0.82rem;
+  --ts-text-md: 0.94rem;
+  --ts-text-lg: 1.1rem;
+  --ts-text-xl: 1.35rem;
+  --ts-text-2xl: 1.7rem;
+
+  /* Shape + elevation */
+  --ts-radius-sm: 4px;
+  --ts-radius-md: 8px;
+  --ts-radius-lg: 12px;
+  --ts-shadow-sm: 0 1px 2px rgba(16, 28, 51, 0.08);
+  --ts-shadow-md: 0 2px 8px rgba(16, 28, 51, 0.1);
+
+  /* Layout */
+  --ts-sidebar-width: 248px;
+  --ts-header-height: 60px;
+  --ts-content-max: 1240px;
+}

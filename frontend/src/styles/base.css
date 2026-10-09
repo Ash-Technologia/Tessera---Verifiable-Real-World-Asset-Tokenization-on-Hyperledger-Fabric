@@ -1,0 +1,96 @@
+/* Base element styles + type hierarchy (Phase 8A). */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  font-family: var(--ts-font-sans);
+  font-size: var(--ts-text-md);
+  line-height: 1.5;
+  color: var(--ts-ink);
+  background: var(--ts-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--ts-accent-blue);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ts-accent-blue);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: var(--ts-ink);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.ts-page-title {
+  font-size: var(--ts-text-2xl);
+  line-height: 1.25;
+}
+
+.ts-section-title {
+  font-size: var(--ts-text-lg);
+  line-height: 1.35;
+}
+
+.ts-card-title {
+  font-size: var(--ts-text-md);
+  line-height: 1.4;
+}
+
+.ts-body {
+  font-size: var(--ts-text-md);
+  color: var(--ts-ink-soft);
+}
+
+.ts-metadata {
+  font-size: var(--ts-text-sm);
+  color: var(--ts-ink-muted);
+}
+
+.ts-label {
+  font-size: var(--ts-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ts-ink-muted);
+}
+
+.ts-mono {
+  font-family: var(--ts-font-mono);
+  font-size: 0.85em;
+}
+
+.ts-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+code,
+pre {
+  font-family: var(--ts-font-mono);
+}
