@@ -342,14 +342,17 @@ export function TokenizationWorkspace() {
 
             <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--ts-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem' }}>
               <div className="ts-metadata">
-                Phase 8E will provide individual investor token distribution, fractional holdings management, and transfer evaluation.
+                Phase 8E Live: Authoritative investor holdings, on-chain cap tables, and dry-run policy transfer evaluation.
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <Link to={`/assets/${encodeURIComponent(assetId)}`}>
-                  <Button variant="secondary" size="sm">← Return to Asset Overview</Button>
+                  <Button variant="secondary" size="sm">← Asset Overview</Button>
                 </Link>
                 <Link to={`/assets/${encodeURIComponent(assetId)}/ownership`}>
-                  <Button variant="primary" size="sm">View Holdings & Transfers (Phase 8E) →</Button>
+                  <Button variant="secondary" size="sm">Holdings Cap Table →</Button>
+                </Link>
+                <Link to={`/assets/${encodeURIComponent(assetId)}/transfers`}>
+                  <Button variant="primary" size="sm">Transfer Workspace →</Button>
                 </Link>
               </div>
             </div>

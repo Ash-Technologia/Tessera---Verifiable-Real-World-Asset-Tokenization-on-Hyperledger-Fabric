@@ -13,6 +13,11 @@ export const assetsApi = {
     return unwrap(body, 'asset');
   },
 
+  /** Alias for getAsset */
+  async get(assetId) {
+    return this.getAsset(assetId);
+  },
+
   /** GET /api/assets/:assetId with envelope (template metadata + fabric source). */
   async getAssetEnvelope(assetId) {
     return apiGet(`/assets/${enc(assetId)}`);
@@ -82,3 +87,5 @@ export const assetsApi = {
     }
   },
 };
+
+export const assetApi = assetsApi;

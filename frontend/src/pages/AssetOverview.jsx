@@ -164,11 +164,20 @@ export function AssetOverview() {
             <Card
               title="Token"
               action={
-                <Link to={`/assets/${encodeURIComponent(assetId)}/token`}>
-                  <Button size="sm" variant="secondary">
-                    {token.data ? 'View Token Details →' : 'Tokenize Asset →'}
-                  </Button>
-                </Link>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <Link to={`/assets/${encodeURIComponent(assetId)}/token`}>
+                    <Button size="sm" variant="secondary">
+                      {token.data ? 'Token Details' : 'Tokenize Asset →'}
+                    </Button>
+                  </Link>
+                  {token.data && (
+                    <Link to={`/assets/${encodeURIComponent(assetId)}/ownership`}>
+                      <Button size="sm" variant="primary">
+                        Holdings →
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               }
             >
               {token.error || !token.data ? (
@@ -205,7 +214,13 @@ export function AssetOverview() {
                 <Link to={`/assets/${encodeURIComponent(assetId)}/token`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
                   token (Phase 8D Live)
                 </Link>
-                {['ownership', 'transfers', 'lifecycle', 'audit', 'passport'].map(
+                <Link to={`/assets/${encodeURIComponent(assetId)}/ownership`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
+                  ownership (Phase 8E Live)
+                </Link>
+                <Link to={`/assets/${encodeURIComponent(assetId)}/transfers`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
+                  transfers (Phase 8E Live)
+                </Link>
+                {['lifecycle', 'audit', 'passport'].map(
                   (seg) => (
                     <Link key={seg} to={`/assets/${encodeURIComponent(assetId)}/${seg}`}>
                       {seg}

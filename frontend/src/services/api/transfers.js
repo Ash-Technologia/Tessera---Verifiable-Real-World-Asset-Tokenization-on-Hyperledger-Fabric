@@ -6,9 +6,9 @@ import { apiGet, apiPost, unwrap } from './client.js';
 const enc = encodeURIComponent;
 
 export const transferApi = {
-  /** GET /api/assets/:assetId/transfers → array */
-  async listByAsset(assetId) {
-    const body = await apiGet(`/assets/${enc(assetId)}/transfers`);
+  /** GET /api/assets/:assetId/transfers → array (supports query: { tokenId, ownerId, ownerMSP }) */
+  async listByAsset(assetId, query) {
+    const body = await apiGet(`/assets/${enc(assetId)}/transfers`, { query });
     const list = unwrap(body, 'transfers');
     return Array.isArray(list) ? list : [];
   },
@@ -30,9 +30,14 @@ export const transferApi = {
     return apiGet(`/assets/${enc(assetId)}/transfer/validate`, { query });
   },
 
-  /** POST /api/assets/:assetId/transfer — execution binding (no workflow UI in 8A). */
+  /** POST /api/assets/:assetId/transfer — execute transfer on Fabric ledger */
   async transfer(assetId, payload) {
     return apiPost(`/assets/${enc(assetId)}/transfer`, payload);
+  },
+
+  /** POST /api/transfers — direct execution binding */
+  async transferDirect(payload) {
+    return apiPost('/transfers', payload);
   },
 
   /** GET /api/tokens/:tokenId/transfers */
@@ -40,5 +45,10 @@ export const transferApi = {
     const body = await apiGet(`/tokens/${enc(tokenId)}/transfers`);
     const list = unwrap(body, 'transfers');
     return Array.isArray(list) ? list : [];
+  },
+
+  /** POST /api/policies/evaluate — dry-run preflight transfer policy evaluation */
+  async evaluate(payload) {
+    return apiPost('/policies/evaluate', payload);
   },
 };

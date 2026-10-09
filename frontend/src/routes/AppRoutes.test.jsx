@@ -72,6 +72,16 @@ describe('routing foundation', () => {
     await waitFor(() => expect(screen.getByText(/Coming in Phase 8G/)).toBeInTheDocument());
   });
 
+  it('renders live ownership workspace at /assets/:assetId/ownership', async () => {
+    renderAt('/assets/VEH-2025-001/ownership');
+    await waitFor(() => expect(screen.getByText(/Ownership & Holdings: VEH-2025-001/)).toBeInTheDocument());
+  });
+
+  it('renders live transfer workspace at /assets/:assetId/transfers', async () => {
+    renderAt('/assets/VEH-2025-001/transfers');
+    await waitFor(() => expect(screen.getByText(/Transfer Workspace: VEH-2025-001/)).toBeInTheDocument());
+  });
+
   it('renders a 404 page for unknown routes', async () => {
     renderAt('/nope-not-here');
     await waitFor(() => expect(screen.getByText('Page not found')).toBeInTheDocument());

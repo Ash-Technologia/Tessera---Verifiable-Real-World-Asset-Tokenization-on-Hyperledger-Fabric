@@ -15,6 +15,13 @@ export const ownershipApi = {
     return Array.isArray(list) ? list : [];
   },
 
+  /** GET /api/tokens/:tokenId/owners — direct token cap table */
+  async getTokenOwnersDirect(tokenId) {
+    const body = await apiGet(`/tokens/${enc(tokenId)}/owners`);
+    const list = unwrap(body, 'owners');
+    return Array.isArray(list) ? list : [];
+  },
+
   /** GET /api/assets/:assetId/ownership/:ownerId — single ownership record */
   async getOwnership(assetId, ownerId, query) {
     const body = await apiGet(`/assets/${enc(assetId)}/ownership/${enc(ownerId)}`, { query });
@@ -27,6 +34,14 @@ export const ownershipApi = {
    */
   async getBalance(assetId, ownerId, query) {
     return apiGet(`/assets/${enc(assetId)}/balance/${enc(ownerId)}`, { query });
+  },
+
+  /**
+   * GET /api/tokens/:tokenId/balance/:ownerId — direct token balance query.
+   * Backend contract: `query.ownerMSP` is required.
+   */
+  async getTokenBalance(tokenId, ownerId, query) {
+    return apiGet(`/tokens/${enc(tokenId)}/balance/${enc(ownerId)}`, { query });
   },
 
   /**

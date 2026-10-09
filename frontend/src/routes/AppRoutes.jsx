@@ -7,10 +7,12 @@ import { AssetOverview } from '../pages/AssetOverview.jsx';
 import { EvidenceWorkspace } from '../pages/EvidenceWorkspace.jsx';
 import { ValuationWorkspace } from '../pages/ValuationWorkspace.jsx';
 import { TokenizationWorkspace } from '../pages/TokenizationWorkspace.jsx';
+import { OwnershipWorkspace } from '../pages/OwnershipWorkspace.jsx';
+import { TransferWorkspace } from '../pages/TransferWorkspace.jsx';
 import { PhasePlaceholder } from '../pages/PhasePlaceholder.jsx';
 import { NotFound } from '../pages/NotFound.jsx';
 
-// Application route architecture (Phase 8A). Feature routes for 8E–8H
+// Application route architecture (Phase 8A). Feature routes for 8F–8H
 // exist now as honest placeholders so later phases only fill pages.
 function workspacePlaceholder(segment, phase, description) {
   return <PhasePlaceholder phase={phase} title={`${segment[0].toUpperCase()}${segment.slice(1)}`} description={description} />;
@@ -27,8 +29,8 @@ export function AppRoutes() {
       <Route path="/assets/:assetId/evidence" element={<EvidenceWorkspace />} />
       <Route path="/assets/:assetId/valuation" element={<ValuationWorkspace />} />
       <Route path="/assets/:assetId/token" element={<TokenizationWorkspace />} />
-      <Route path="/assets/:assetId/ownership" element={workspacePlaceholder('ownership', '8E', 'Ownership and holdings workspace arrives in Phase 8E.')} />
-      <Route path="/assets/:assetId/transfers" element={workspacePlaceholder('transfers', '8E', 'Transfer evaluation and execution workspace arrives in Phase 8E.')} />
+      <Route path="/assets/:assetId/ownership" element={<OwnershipWorkspace />} />
+      <Route path="/assets/:assetId/transfers" element={<TransferWorkspace />} />
       <Route path="/assets/:assetId/lifecycle" element={workspacePlaceholder('lifecycle', '8F', 'Lifecycle transition workspace arrives in Phase 8F.')} />
       <Route path="/assets/:assetId/audit" element={workspacePlaceholder('audit', '8F', 'Audit Time Machine workspace arrives in Phase 8F.')} />
       <Route path="/assets/:assetId/passport" element={workspacePlaceholder('passport', '8G', 'Verifiable Asset Passport visualization arrives in Phase 8G.')} />
