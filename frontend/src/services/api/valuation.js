@@ -1,6 +1,6 @@
 // Valuation domain API bindings (Phase 8A).
 
-import { apiGet, unwrap } from './client.js';
+import { apiGet, apiPost, unwrap } from './client.js';
 
 const enc = encodeURIComponent;
 const assetPath = (assetId) => `/assets/${enc(assetId)}`;
@@ -23,6 +23,16 @@ export const valuationApi = {
   async getReadiness(assetId) {
     return apiGet(`${assetPath(assetId)}/valuation-readiness`);
   },
+
+  /** POST /api/assets/:assetId/valuations → submit new appraisal */
+  async submit(assetId, payload) {
+    return apiPost(`${assetPath(assetId)}/valuations`, payload);
+  },
+
+  /** POST /api/assets/:assetId/valuations/simulate → generate simulated valuation */
+  async simulate(assetId) {
+    return apiPost(`${assetPath(assetId)}/valuations/simulate`, {});
+  },
 };
 
 export const approvalApi = {
@@ -36,5 +46,10 @@ export const approvalApi = {
   /** GET /api/assets/:assetId/tokenization-approval-status */
   async getStatus(assetId) {
     return apiGet(`${assetPath(assetId)}/tokenization-approval-status`);
+  },
+
+  /** POST /api/assets/:assetId/tokenization-approval → submit approval decision */
+  async submit(assetId, payload) {
+    return apiPost(`${assetPath(assetId)}/tokenization-approval`, payload);
   },
 };

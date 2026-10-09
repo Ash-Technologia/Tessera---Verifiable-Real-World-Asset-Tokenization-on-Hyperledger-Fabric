@@ -128,9 +128,21 @@ export function AssetOverview() {
               />
             </Card>
 
-            <Card title="Latest valuation">
+            <Card
+              title="Latest valuation"
+              action={
+                <Link to={`/assets/${encodeURIComponent(assetId)}/valuation`}>
+                  <Button size="sm" variant="secondary">Manage Valuations →</Button>
+                </Link>
+              }
+            >
               {!latestValuation ? (
-                <p className="ts-metadata">No valuation recorded yet. Valuation workflows arrive in Phase 8D.</p>
+                <p className="ts-metadata">
+                  No valuation recorded yet.{' '}
+                  <Link to={`/assets/${encodeURIComponent(assetId)}/valuation`}>
+                    Submit appraisal in Valuation Workspace →
+                  </Link>
+                </p>
               ) : (
                 <MetaList
                   entries={[
@@ -149,9 +161,23 @@ export function AssetOverview() {
           </div>
 
           <div className="ts-grid-2">
-            <Card title="Token">
+            <Card
+              title="Token"
+              action={
+                <Link to={`/assets/${encodeURIComponent(assetId)}/token`}>
+                  <Button size="sm" variant="secondary">
+                    {token.data ? 'View Token Details →' : 'Tokenize Asset →'}
+                  </Button>
+                </Link>
+              }
+            >
               {token.error || !token.data ? (
-                <p className="ts-metadata">No token bound to this asset yet. Tokenization UI arrives in Phase 8D.</p>
+                <p className="ts-metadata">
+                  No token bound to this asset yet.{' '}
+                  <Link to={`/assets/${encodeURIComponent(assetId)}/token`}>
+                    Review prerequisites & tokenize →
+                  </Link>
+                </p>
               ) : (
                 <MetaList
                   entries={[
@@ -169,13 +195,19 @@ export function AssetOverview() {
               <p className="ts-body" style={{ margin: '0 0 0.5rem' }}>
                 Asset workspaces on Hyperledger Fabric:
               </p>
-              <p className="ts-metadata" style={{ margin: '0 0 0.8rem' }}>
-                <Link to={`/assets/${encodeURIComponent(assetId)}/evidence`} style={{ marginRight: '0.8rem', fontWeight: 600, color: 'var(--ts-primary)' }}>
+              <p className="ts-metadata" style={{ margin: '0 0 0.8rem', display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+                <Link to={`/assets/${encodeURIComponent(assetId)}/evidence`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
                   evidence (Phase 8C Live)
                 </Link>
-                {['valuation', 'token', 'ownership', 'transfers', 'lifecycle', 'audit', 'passport'].map(
+                <Link to={`/assets/${encodeURIComponent(assetId)}/valuation`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
+                  valuation (Phase 8D Live)
+                </Link>
+                <Link to={`/assets/${encodeURIComponent(assetId)}/token`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
+                  token (Phase 8D Live)
+                </Link>
+                {['ownership', 'transfers', 'lifecycle', 'audit', 'passport'].map(
                   (seg) => (
-                    <Link key={seg} to={`/assets/${encodeURIComponent(assetId)}/${seg}`} style={{ marginRight: '0.8rem' }}>
+                    <Link key={seg} to={`/assets/${encodeURIComponent(assetId)}/${seg}`}>
                       {seg}
                     </Link>
                   ),

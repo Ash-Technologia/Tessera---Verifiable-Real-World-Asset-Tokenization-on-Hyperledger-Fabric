@@ -12,6 +12,7 @@ const STATUS_TONES = {
   COMPLETED: 'green',
   READY: 'green',
   READY_FOR_VERIFICATION: 'green',
+  ELIGIBLE: 'green',
   // Pending / transitional
   DRAFT: 'neutral',
   REGISTERED: 'blue',
@@ -20,6 +21,7 @@ const STATUS_TONES = {
   UNDER_REVIEW: 'amber',
   PENDING: 'amber',
   NOT_READY: 'amber',
+  INELIGIBLE: 'amber',
   // Restrictive / negative
   RESTRICTED: 'red',
   PLEDGED: 'gold',
@@ -27,9 +29,12 @@ const STATUS_TONES = {
   EXPIRED: 'amber',
   FROZEN: 'red',
   RETIRED: 'neutral',
+  SUPERSEDED: 'neutral',
   REDEEMED: 'purple',
   TOKENIZED: 'teal',
   INACTIVE: 'neutral',
+  WHOLE: 'blue',
+  FRACTIONAL: 'purple',
 };
 
 export function statusToneFor(status) {

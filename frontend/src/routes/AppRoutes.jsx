@@ -5,10 +5,12 @@ import { Dashboard } from '../pages/Dashboard.jsx';
 import { AssetList } from '../pages/AssetList.jsx';
 import { AssetOverview } from '../pages/AssetOverview.jsx';
 import { EvidenceWorkspace } from '../pages/EvidenceWorkspace.jsx';
+import { ValuationWorkspace } from '../pages/ValuationWorkspace.jsx';
+import { TokenizationWorkspace } from '../pages/TokenizationWorkspace.jsx';
 import { PhasePlaceholder } from '../pages/PhasePlaceholder.jsx';
 import { NotFound } from '../pages/NotFound.jsx';
 
-// Application route architecture (Phase 8A). Feature routes for 8B–8H
+// Application route architecture (Phase 8A). Feature routes for 8E–8H
 // exist now as honest placeholders so later phases only fill pages.
 function workspacePlaceholder(segment, phase, description) {
   return <PhasePlaceholder phase={phase} title={`${segment[0].toUpperCase()}${segment.slice(1)}`} description={description} />;
@@ -23,8 +25,8 @@ export function AppRoutes() {
       <Route path="/assets" element={<AssetList />} />
       <Route path="/assets/:assetId" element={<AssetOverview />} />
       <Route path="/assets/:assetId/evidence" element={<EvidenceWorkspace />} />
-      <Route path="/assets/:assetId/valuation" element={workspacePlaceholder('valuation', '8D', 'Valuation review and approval workspace arrives in Phase 8D.')} />
-      <Route path="/assets/:assetId/token" element={workspacePlaceholder('token', '8D', 'Tokenization workspace arrives in Phase 8D.')} />
+      <Route path="/assets/:assetId/valuation" element={<ValuationWorkspace />} />
+      <Route path="/assets/:assetId/token" element={<TokenizationWorkspace />} />
       <Route path="/assets/:assetId/ownership" element={workspacePlaceholder('ownership', '8E', 'Ownership and holdings workspace arrives in Phase 8E.')} />
       <Route path="/assets/:assetId/transfers" element={workspacePlaceholder('transfers', '8E', 'Transfer evaluation and execution workspace arrives in Phase 8E.')} />
       <Route path="/assets/:assetId/lifecycle" element={workspacePlaceholder('lifecycle', '8F', 'Lifecycle transition workspace arrives in Phase 8F.')} />

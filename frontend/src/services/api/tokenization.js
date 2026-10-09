@@ -1,6 +1,6 @@
 // Tokenization + token query API bindings (Phase 8A).
 
-import { apiGet, unwrap } from './client.js';
+import { apiGet, apiPost, unwrap } from './client.js';
 
 const enc = encodeURIComponent;
 
@@ -14,6 +14,11 @@ export const tokenizationApi = {
   /** GET /api/assets/:assetId/tokenization-readiness */
   async getReadiness(assetId) {
     return apiGet(`/assets/${enc(assetId)}/tokenization-readiness`);
+  },
+
+  /** POST /api/assets/:assetId/tokenize → execute tokenization */
+  async tokenize(assetId, payload) {
+    return apiPost(`/assets/${enc(assetId)}/tokenize`, payload);
   },
 
   /** GET /api/tokens/:tokenId */

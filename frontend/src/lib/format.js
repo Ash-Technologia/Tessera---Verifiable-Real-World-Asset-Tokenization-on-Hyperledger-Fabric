@@ -19,6 +19,14 @@ export function formatTimestamp(value, { fallback = '—' } = {}) {
   return date.toISOString().replace('T', ' ').replace('Z', ' UTC');
 }
 
+/** Formats a date string (YYYY-MM-DD or ISO) for safe display. */
+export function formatDate(value, { fallback = '—' } = {}) {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toISOString().split('T')[0];
+}
+
 /** Formats a numeric amount with locale-independent grouping. */
 export function formatAmount(value, { fallback = '—', maximumFractionDigits = 4 } = {}) {
   if (value === null || value === undefined || value === '') return fallback;
