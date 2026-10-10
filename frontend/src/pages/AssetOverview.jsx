@@ -207,7 +207,14 @@ export function AssetOverview() {
               )}
             </Card>
 
-            <Card title="Workspaces & Provenance">
+            <Card
+              title="Workspaces & Provenance"
+              action={
+                <Link to={`/assets/${encodeURIComponent(assetId)}/passport`}>
+                  <Button size="sm" variant="primary">Inspect Passport →</Button>
+                </Link>
+              }
+            >
               <p className="ts-body" style={{ margin: '0 0 0.5rem' }}>
                 Asset workspaces on Hyperledger Fabric:
               </p>
@@ -233,8 +240,8 @@ export function AssetOverview() {
                 <Link to={`/assets/${encodeURIComponent(assetId)}/audit`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
                   audit (Phase 8F Live)
                 </Link>
-                <Link to={`/assets/${encodeURIComponent(assetId)}/passport`}>
-                  passport
+                <Link to={`/assets/${encodeURIComponent(assetId)}/passport`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
+                  passport (Phase 8G Live)
                 </Link>
               </p>
               <p className="ts-metadata">

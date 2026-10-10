@@ -37,6 +37,20 @@ describe('routing foundation', () => {
       if (u.endsWith('/health/fabric')) {
         return jsonResponse(200, { status: 'ok', fabric: { connected: true, channel: 'tessera-channel', peer: 'localhost:7051', msp: 'IssuerMSP' } });
       }
+      if (u.includes('/passport')) {
+        return jsonResponse(200, {
+          success: true,
+          passport: {
+            passportId: 'TESSERA:VEH-2025-001:v1.0',
+            passportVersion: '1.0',
+            generatedAt: '2025-01-01T00:00:00Z',
+            asset: { assetId: 'VEH-2025-001', assetType: 'vehicle' },
+            lifecycle: { state: 'REGISTERED' },
+            integrity: { algorithm: 'SHA-256', passportHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' },
+          },
+          integrity: { algorithm: 'SHA-256', passportHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' },
+        });
+      }
       if (u.includes('/api/assets/') && !u.includes('/exists')) {
         const match = u.match(/\/api\/assets\/([^/?]+)/);
         const assetId = match ? decodeURIComponent(match[1]) : 'UNKNOWN';
@@ -67,9 +81,9 @@ describe('routing foundation', () => {
     await waitFor(() => expect(screen.getAllByText('VEH-2025-001').length).toBeGreaterThan(0));
   });
 
-  it('renders placeholders for future workspace routes', async () => {
+  it('renders live passport workspace at /assets/:assetId/passport', async () => {
     renderAt('/assets/VEH-2025-001/passport');
-    await waitFor(() => expect(screen.getByText(/Coming in Phase 8G/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Verifiable Asset Passport: VEH-2025-001/)).toBeInTheDocument());
   });
 
   it('renders live ownership workspace at /assets/:assetId/ownership', async () => {
