@@ -62,26 +62,44 @@ export const assetsApi = {
   },
 
   /**
-   * Attempts to list assets from the backend if an authoritative list endpoint exists.
-   * If the backend returns 404 (because GET /api/assets is not exposed),
-   * returns { supported: false, assets: [] } without failing.
-   * If an asset list is returned, returns { supported: true, assets }.
-   * @returns {Promise<{ supported: boolean, assets: Array }>}
+   * Authoritative paginated global asset enumeration from Fabric world state (Phase 9B).
+   *
+   * @param {object} [params]
+   * @param {number} [params.pageSize=10]
+   * @param {string} [params.bookmark]
+   * @param {string} [params.assetType]
+   * @param {string} [params.status]
+   * @param {string} [params.search]
+   * @returns {Promise<{ supported: boolean, assets: Array, count: number, pageSize: number, bookmark: string|null, hasMore: boolean, total: number|null, totalNotice: string }>}
    */
-  async listAssets() {
+  async listAssets(params = {}) {
     try {
-      const body = await apiGet('/assets');
+      const queryParts = [];
+      if (params.pageSize) queryParts.push(`pageSize=${encodeURIComponent(params.pageSize)}`);
+      if (params.bookmark) queryParts.push(`bookmark=${encodeURIComponent(params.bookmark)}`);
+      if (params.assetType && params.assetType !== 'ALL') queryParts.push(`assetType=${encodeURIComponent(params.assetType)}`);
+      if (params.status && params.status !== 'ALL') queryParts.push(`status=${encodeURIComponent(params.status)}`);
+      if (params.search && params.search.trim()) queryParts.push(`search=${encodeURIComponent(params.search.trim())}`);
+
+      const qs = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+      const body = await apiGet(`/assets${qs}`);
+
       const list = unwrap(body, 'assets');
-      if (Array.isArray(list)) {
-        return { supported: true, assets: list };
-      }
-      if (Array.isArray(body)) {
-        return { supported: true, assets: body };
-      }
-      return { supported: true, assets: [] };
+      const assets = Array.isArray(list) ? list : (Array.isArray(body) ? body : []);
+      return {
+        supported: true,
+        assets,
+        count: body?.count ?? assets.length,
+        pageSize: body?.pageSize ?? (params.pageSize || 10),
+        bookmark: body?.bookmark || null,
+        hasMore: Boolean(body?.hasMore),
+        total: body?.total ?? null,
+        totalNotice: body?.totalNotice || '',
+        fabric: body?.fabric,
+      };
     } catch (err) {
       if (err?.status === 404 || err?.kind === ApiErrorKind.NOT_FOUND) {
-        return { supported: false, assets: [] };
+        return { supported: false, assets: [], count: 0, hasMore: false };
       }
       throw err;
     }

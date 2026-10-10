@@ -40,9 +40,17 @@ export function AssetList() {
 
   // Load assets: Try authoritative bulk endpoint; fall back to seed resolution with disclosure
   const fetchAssets = useCallback(async () => {
-    const listRes = await assetsApi.listAssets();
+    const listRes = await assetsApi.listAssets({ pageSize: 100 });
     if (listRes?.supported && Array.isArray(listRes?.assets)) {
-      return { supported: true, assets: listRes.assets };
+      return {
+        supported: true,
+        assets: listRes.assets,
+        count: listRes.count,
+        bookmark: listRes.bookmark,
+        hasMore: listRes.hasMore,
+        total: listRes.total,
+        totalNotice: listRes.totalNotice,
+      };
     }
     // Bulk enumeration not available on backend — resolve seed set
     const seedRes = await assetsApi.getAssetsByIds(KNOWN_SEED_ASSETS);

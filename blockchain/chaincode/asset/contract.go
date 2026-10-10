@@ -120,6 +120,12 @@ func (c *AssetContract) CreateAsset(
 		return fmt.Errorf("failed to write asset %q to ledger: %w", assetID, err)
 	}
 
+	// Maintain composite key index atomically with asset creation
+	assetIndexKey, err := ctx.GetStub().CreateCompositeKey("asset~id", []string{assetID})
+	if err == nil {
+		_ = ctx.GetStub().PutState(assetIndexKey, []byte{0x00})
+	}
+
 	_, _ = c.recordLifecycleTransition(ctx, assetID, StatusDraft, StatusRegistered, clientID, mspID, "ISSUER", "Asset created and registered on ledger", nil)
 
 	return nil
@@ -165,6 +171,186 @@ func (c *AssetContract) AssetExists(
 	}
 
 	return assetBytes != nil, nil
+}
+
+// QueryAssetsResponse models the paginated asset query output.
+type QueryAssetsResponse struct {
+	Assets       []*Asset `json:"assets"`
+	Count        int32    `json:"count"`
+	PageSize     int32    `json:"pageSize"`
+	Bookmark     string   `json:"bookmark"`
+	HasMore      bool     `json:"hasMore"`
+	TotalRecords int32    `json:"totalRecords"`
+}
+
+// sanitizeRegexString escapes special regex characters so caller input cannot cause ReDoS or query injection.
+func sanitizeRegexString(input string) string {
+	var sb strings.Builder
+	for _, r := range input {
+		switch r {
+		case '\\', '^', '$', '.', '|', '?', '*', '+', '(', ')', '[', ']', '{', '}':
+			sb.WriteRune('\\')
+			sb.WriteRune(r)
+		default:
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
+}
+
+// QueryAssetsWithPagination retrieves assets from CouchDB world state with stable pagination and deterministic filtering.
+// Server-enforces docType: "asset" to exclude all non-asset records (evidence, valuation, token, etc.).
+func (c *AssetContract) QueryAssetsWithPagination(
+	ctx contractapi.TransactionContextInterface,
+	pageSizeStr string,
+	bookmark string,
+	assetType string,
+	status string,
+	search string,
+) (string, error) {
+	pageSize := 10
+	if pageSizeStr != "" {
+		if parsed, err := strconv.Atoi(pageSizeStr); err == nil && parsed > 0 {
+			pageSize = parsed
+		}
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	// Normalize bookmark
+	if bookmark == "null" || bookmark == "undefined" {
+		bookmark = ""
+	}
+
+	// Build parameterized CouchDB selector securely on server
+	selector := map[string]interface{}{
+		"docType": DocTypeAsset,
+	}
+
+	assetType = strings.TrimSpace(strings.ToLower(assetType))
+	if assetType != "" && assetType != "all" {
+		selector["assetType"] = assetType
+	}
+
+	status = strings.TrimSpace(strings.ToUpper(status))
+	if status != "" && status != "ALL" {
+		selector["status"] = status
+	}
+
+	search = strings.TrimSpace(search)
+	if search != "" {
+		escaped := sanitizeRegexString(search)
+		pattern := "(?i)" + escaped
+		selector["$or"] = []map[string]interface{}{
+			{"assetId": map[string]interface{}{"$regex": pattern}},
+			{"canonicalIdentity": map[string]interface{}{"$regex": pattern}},
+		}
+	}
+
+	queryMap := map[string]interface{}{
+		"selector": selector,
+	}
+
+	queryBytes, err := json.Marshal(queryMap)
+	if err != nil {
+		return "", fmt.Errorf("failed to build query selector: %w", err)
+	}
+
+	queryString := string(queryBytes)
+
+	iterator, metadata, err := ctx.GetStub().GetQueryResultWithPagination(queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute asset query: %w", err)
+	}
+	defer iterator.Close()
+
+	var assets []*Asset
+	for iterator.HasNext() {
+		item, err := iterator.Next()
+		if err != nil {
+			return "", fmt.Errorf("failed reading asset iterator: %w", err)
+		}
+
+		var asset Asset
+		if err := json.Unmarshal(item.Value, &asset); err != nil {
+			continue
+		}
+		// Defensive check: ensure docType is asset and exclude any other types
+		if asset.DocType == DocTypeAsset {
+			assets = append(assets, &asset)
+		}
+	}
+
+	if assets == nil {
+		assets = make([]*Asset, 0)
+	}
+
+	var nextBookmark string
+	var totalRecords int32
+	if metadata != nil {
+		nextBookmark = metadata.Bookmark
+		totalRecords = metadata.FetchedRecordsCount
+	}
+
+	// If fewer records than requested or bookmark unchanged, no further pages
+	hasMore := len(assets) == pageSize && nextBookmark != "" && nextBookmark != bookmark
+
+	res := QueryAssetsResponse{
+		Assets:       assets,
+		Count:        int32(len(assets)),
+		PageSize:     int32(pageSize),
+		Bookmark:     nextBookmark,
+		HasMore:      hasMore,
+		TotalRecords: totalRecords,
+	}
+
+	resBytes, err := json.Marshal(res)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize query response: %w", err)
+	}
+
+	return string(resBytes), nil
+}
+
+// BackfillAssetIndex iterates over existing assets in world state and ensures
+// the asset~id composite key index exists. Idempotent and non-destructive.
+func (c *AssetContract) BackfillAssetIndex(
+	ctx contractapi.TransactionContextInterface,
+) (string, error) {
+	queryString := `{"selector":{"docType":"asset"}}`
+	iterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return "", fmt.Errorf("failed to query assets for backfill: %w", err)
+	}
+	defer iterator.Close()
+
+	indexedCount := 0
+	for iterator.HasNext() {
+		item, err := iterator.Next()
+		if err != nil {
+			return "", fmt.Errorf("failed reading asset during backfill: %w", err)
+		}
+
+		var asset Asset
+		if err := json.Unmarshal(item.Value, &asset); err != nil || asset.DocType != DocTypeAsset {
+			continue
+		}
+
+		indexKey, err := ctx.GetStub().CreateCompositeKey("asset~id", []string{asset.AssetID})
+		if err != nil {
+			continue
+		}
+
+		existing, _ := ctx.GetStub().GetState(indexKey)
+		if existing == nil {
+			if err := ctx.GetStub().PutState(indexKey, []byte{0x00}); err == nil {
+				indexedCount++
+			}
+		}
+	}
+
+	return fmt.Sprintf(`{"success":true,"indexedCount":%d}`, indexedCount), nil
 }
 
 // UpdateAssetAttributes updates the mutable attributes of an existing asset.

@@ -35,9 +35,9 @@ SCRIPTS_DIR="${BLOCKCHAIN_DIR}/scripts"
 
 CHANNEL_NAME="tessera-channel"
 CHAINCODE_NAME="asset"
-CHAINCODE_VERSION="6.1"
-CHAINCODE_SEQUENCE="17"
-CHAINCODE_LABEL="asset_6.1"
+CHAINCODE_VERSION="6.2"
+CHAINCODE_SEQUENCE="18"
+CHAINCODE_LABEL="asset_6.2"
 CHAINCODE_PATH="${BLOCKCHAIN_DIR}/chaincode/asset"
 
 # Fabric binary path (installed by install-fabric.sh)

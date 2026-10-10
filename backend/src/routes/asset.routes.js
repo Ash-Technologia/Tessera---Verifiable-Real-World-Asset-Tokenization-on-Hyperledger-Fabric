@@ -70,6 +70,167 @@ async function requireFabricConnection(req, res, next) {
 }
 
 // ============================================================
+// GET /api/assets — Global Authoritative Asset Registry (Phase 9B)
+// ============================================================
+/**
+ * Authoritative, paginated enumeration of on-chain assets from Fabric world state.
+ *
+ * Query params:
+ *   pageSize   - Number of records per page (1–100, default 10)
+ *   bookmark   - Continuation bookmark from previous query page
+ *   assetType  - Optional filter ("vehicle", "land", "grain")
+ *   status     - Optional lifecycle status ("REGISTERED", "VERIFIED", "TOKENIZED", etc.)
+ *   search     - Optional search query matching assetId or canonicalIdentity
+ *
+ * Security & Reliability:
+ *   - Fabric world state is the sole authoritative source of truth.
+ *   - Non-asset records (evidence, valuations, tokens, etc.) are strictly excluded.
+ *   - Client inputs are strictly validated; arbitrary queries are rejected.
+ *   - Deterministic pagination guaranteed by CouchDB state database.
+ *   - Total count is explicitly documented as unavailable to prevent unbounded ledger scans.
+ *
+ * Response 200: { success, assets, count, pageSize, bookmark, hasMore, total, totalNotice, fabric }
+ * Response 400: Invalid query parameters
+ * Response 503: Fabric network unavailable
+ */
+router.get('/', requireFabricConnection, async (req, res, next) => {
+  const { pageSize: rawPageSize, bookmark: rawBookmark, assetType, status, search } = req.query;
+
+  // 1. Validate pageSize (must be an integer 1-100 if supplied)
+  let parsedPageSize = 10;
+  if (rawPageSize !== undefined) {
+    const n = Number(rawPageSize);
+    if (!Number.isInteger(n) || n < 1 || n > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid pageSize: must be an integer between 1 and 100',
+      });
+    }
+    parsedPageSize = n;
+  }
+
+  // 2. Validate bookmark
+  let parsedBookmark = '';
+  if (rawBookmark !== undefined) {
+    if (typeof rawBookmark !== 'string' || rawBookmark.length > 2048) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid bookmark: bookmark must be a string up to 2048 characters',
+      });
+    }
+    if (rawBookmark !== 'null' && rawBookmark !== 'undefined') {
+      parsedBookmark = rawBookmark.trim();
+    }
+  }
+
+  // 3. Validate filters
+  let cleanAssetType = '';
+  if (assetType !== undefined) {
+    if (typeof assetType !== 'string' || assetType.length > 64) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid assetType filter',
+      });
+    }
+    cleanAssetType = assetType.trim();
+  }
+
+  let cleanStatus = '';
+  if (status !== undefined) {
+    if (typeof status !== 'string' || status.length > 64) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status filter',
+      });
+    }
+    cleanStatus = status.trim();
+  }
+
+  let cleanSearch = '';
+  if (search !== undefined) {
+    if (typeof search !== 'string' || search.length > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid search term: max 100 characters',
+      });
+    }
+    cleanSearch = search.trim();
+  }
+
+  try {
+    logger.info('GET /api/assets — Authoritative Enumeration', {
+      pageSize: parsedPageSize,
+      bookmark: parsedBookmark ? `${parsedBookmark.slice(0, 12)}…` : '(none)',
+      assetType: cleanAssetType,
+      status: cleanStatus,
+      search: cleanSearch,
+    });
+
+    const result = await contractService.queryAssets({
+      pageSize: parsedPageSize,
+      bookmark: parsedBookmark,
+      assetType: cleanAssetType,
+      status: cleanStatus,
+      search: cleanSearch,
+    });
+
+    // Enrich each asset record with registered template schema metadata where available
+    const enrichedAssets = (result.assets || []).map((asset) => {
+      let templateMeta = null;
+      try {
+        if (asset.templateId) {
+          templateMeta = templateService.getTemplateMetadata(asset.templateId, asset.templateVersion);
+        }
+      } catch (_) {
+        // Non-fatal if template is not registered in service
+      }
+      return {
+        ...asset,
+        template: templateMeta,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      assets: enrichedAssets,
+      count: enrichedAssets.length,
+      pageSize: result.pageSize,
+      bookmark: result.bookmark || null,
+      hasMore: Boolean(result.hasMore),
+      total: null,
+      totalNotice: 'Total count is unavailable under CouchDB pagination to prevent unbounded ledger scans',
+      fabric: {
+        channel: process.env.FABRIC_CHANNEL || 'tessera-channel',
+        chaincode: process.env.FABRIC_CHAINCODE || 'asset',
+        source: 'ledger-world-state',
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================
+// POST /api/assets/backfill-index — Backfill Index Migration (Phase 9B)
+// ============================================================
+/**
+ * Idempotent migration ensuring composite key indexes exist for existing ledger records.
+ */
+router.post('/backfill-index', requireFabricConnection, async (req, res, next) => {
+  try {
+    logger.info('POST /api/assets/backfill-index — Backfill Index Migration');
+    const result = await contractService.backfillAssetIndex();
+    return res.status(200).json({
+      success: true,
+      message: 'Asset composite key index backfill complete',
+      ...result,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ============================================================
 // POST /api/assets — CreateAsset (Phase 2)
 // ============================================================
 /**

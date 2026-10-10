@@ -1,0 +1,12 @@
+{
+  "index": {
+    "fields": [
+      "docType",
+      "assetType",
+      "status",
+      "assetId"
+    ]
+  },
+  "name": "indexAssetDocType",
+  "type": "json"
+}

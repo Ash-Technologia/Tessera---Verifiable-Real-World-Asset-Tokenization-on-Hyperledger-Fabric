@@ -944,7 +944,56 @@ class ContractService {
     const decoded = utf8Decoder.decode(resultBytes);
     return decoded ? JSON.parse(decoded) : [];
   }
+
+  // ============================================================
+  // Global Asset Enumeration — Phase 9B
+  // ============================================================
+
+  /**
+   * Queries real assets from the Fabric world state with deterministic pagination and filtering.
+   *
+   * @param {object} params
+   * @param {number|string} [params.pageSize=10] - Number of records per page (1-100)
+   * @param {string} [params.bookmark='']       - Continuation bookmark from previous page
+   * @param {string} [params.assetType='']      - Optional assetType filter (e.g. "vehicle", "land", "grain")
+   * @param {string} [params.status='']         - Optional status filter (e.g. "REGISTERED", "VERIFIED")
+   * @param {string} [params.search='']         - Optional search term matching assetId or canonicalIdentity
+   * @returns {Promise<{ assets: Array<object>, count: number, pageSize: number, bookmark: string, hasMore: boolean, totalRecords: number }>}
+   */
+  async queryAssets({ pageSize = 10, bookmark = '', assetType = '', status = '', search = '' } = {}) {
+    logger.debug('Evaluating QueryAssetsWithPagination query', { pageSize, bookmark, assetType, status, search });
+    const contract = this._getContract();
+    const resultBytes = await contract.evaluateTransaction(
+      'QueryAssetsWithPagination',
+      String(pageSize || 10),
+      bookmark || '',
+      assetType || '',
+      status || '',
+      search || ''
+    );
+    const decoded = utf8Decoder.decode(resultBytes);
+    return decoded ? JSON.parse(decoded) : { assets: [], count: 0, pageSize: Number(pageSize) || 10, bookmark: '', hasMore: false, totalRecords: 0 };
+  }
+
+  /**
+   * Safe, idempotent backfill migration ensuring the asset~id composite key index
+   * exists for all pre-existing asset records in the Fabric world state.
+   *
+   * @returns {Promise<{ success: boolean, indexedCount: number }>}
+   */
+  async backfillAssetIndex() {
+    logger.info('Submitting BackfillAssetIndex transaction');
+    const contract = this._getContract();
+    try {
+      const resultBytes = await contract.submitTransaction('BackfillAssetIndex');
+      const decoded = utf8Decoder.decode(resultBytes);
+      return decoded ? JSON.parse(decoded) : { success: true, indexedCount: 0 };
+    } catch (err) {
+      this._rethrowChaincodeError(err);
+    }
+  }
 }
 
 module.exports = new ContractService();
+
 
