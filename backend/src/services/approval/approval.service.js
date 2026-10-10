@@ -32,6 +32,8 @@ class ApprovalService {
     approvalId,
     verificationSnapshot,
     valuationSnapshot,
+    approvedBy,
+    approvedByMSP,
   }) {
     if (!assetId) throw new Error('assetId is required');
     if (!decision || (decision !== 'APPROVED' && decision !== 'REJECTED')) {
@@ -53,8 +55,8 @@ class ApprovalService {
       docType: 'approval',
       approvalId: finalApprovalId,
       assetId,
-      approvedBy: '', // Will be set by chaincode
-      approvedByMSP: '', // Will be set by chaincode
+      approvedBy: approvedBy || '',
+      approvedByMSP: approvedByMSP || '',
       approvedAt: new Date().toISOString(),
       decision,
       reason: reason || `Tokenization ${decision.toLowerCase()}`,

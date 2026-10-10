@@ -7,6 +7,8 @@ const helmet = require('helmet');
 const cors = require('cors');
 const logger = require('./utils/logger');
 const { notFoundHandler, errorHandler } = require('./middleware/error.middleware');
+const { sanitizeIdentityHeaders, authenticate } = require('./middleware/auth.middleware');
+const authRoutes = require('./routes/auth.routes');
 const healthRoutes = require('./routes/health.routes');
 const assetRoutes = require('./routes/asset.routes');
 const templateRoutes = require('./routes/template.routes');
@@ -67,9 +69,19 @@ app.use((req, _res, next) => {
 });
 
 // ============================================================
+// Identity and Authentication Middleware (Phase 9C)
+// ============================================================
+// Strip client-supplied identity assertion headers to prevent spoofing
+app.use(sanitizeIdentityHeaders);
+
+// Extract and cryptographically verify Bearer JWT if provided
+app.use(authenticate);
+
+// ============================================================
 // Routes
 // ============================================================
 app.use('/health', healthRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/assets/:assetId', evidenceRoutes);
 app.use('/api/assets/:assetId', valuationRoutes);
@@ -222,9 +234,11 @@ async function start() {
   });
 }
 
-start().catch((err) => {
-  logger.error('Failed to start TESSERA backend', { error: err.message, stack: err.stack });
-  process.exit(1);
-});
+if (require.main === module) {
+  start().catch((err) => {
+    logger.error('Failed to start TESSERA backend', { error: err.message, stack: err.stack });
+    process.exit(1);
+  });
+}
 
 module.exports = app; // exported for testing

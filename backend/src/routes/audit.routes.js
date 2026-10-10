@@ -2,6 +2,7 @@
 
 /**
  * TESSERA Audit Time Machine — Phase 7C REST Routes
+ * Protected under Phase 9C server-enforced authentication
  *
  * Endpoints:
  *   GET /api/assets/:assetId/audit                  — Unified chronological audit timeline
@@ -12,6 +13,7 @@
 const express = require('express');
 const { auditService } = require('../services/audit');
 const gatewayService = require('../services/fabric/gateway.service');
+const { requireAuth } = require('../middleware/auth.middleware');
 const logger = require('../utils/logger');
 
 const router = express.Router({ mergeParams: true });
@@ -36,7 +38,7 @@ async function requireFabricConnection(req, res, next) {
 }
 
 // GET /api/assets/:assetId/audit/state-at — Point-in-time state reconstruction (defined before :eventId to avoid route clash)
-router.get('/state-at', requireFabricConnection, async (req, res, next) => {
+router.get('/state-at', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { assetId } = req.params;
   const { timestamp } = req.query;
 
@@ -65,7 +67,7 @@ router.get('/state-at', requireFabricConnection, async (req, res, next) => {
 });
 
 // GET /api/assets/:assetId/audit — Complete unified chronological audit timeline
-router.get('/', requireFabricConnection, async (req, res, next) => {
+router.get('/', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { assetId } = req.params;
   const { from, to, eventType, limit, offset } = req.query;
 
@@ -91,7 +93,7 @@ router.get('/', requireFabricConnection, async (req, res, next) => {
 });
 
 // GET /api/assets/:assetId/audit/:eventId — Single event detail
-router.get('/:eventId', requireFabricConnection, async (req, res, next) => {
+router.get('/:eventId', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { assetId, eventId } = req.params;
 
   try {

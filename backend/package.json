@@ -22,7 +22,8 @@
     "test:phase7b": "node ../tests/phase7b.test.js",
     "test:phase7c": "node ../tests/phase7c.test.js",
     "test:phase9a": "node ../tests/phase9a.test.js",
-    "test:phase9b": "node ../tests/phase9b.test.js"
+    "test:phase9b": "node ../tests/phase9b.test.js",
+    "test:phase9c": "node ../tests/phase9c.test.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.12.4",

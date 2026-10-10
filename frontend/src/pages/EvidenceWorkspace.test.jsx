@@ -144,8 +144,9 @@ describe('EvidenceWorkspace page', () => {
       expect(screen.getAllByText('VEH-2025-001').length).toBeGreaterThan(0);
     });
 
-    // Check readiness badge and checklist
-    expect(screen.getAllByText('INSURANCE').length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getAllByText('INSURANCE').length).toBeGreaterThan(0);
+    });
     expect(screen.getAllByText('INSPECTION_REPORT').length).toBeGreaterThan(0);
     expect(screen.getAllByText('OWNERSHIP_PROOF').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Missing').length).toBeGreaterThan(0);

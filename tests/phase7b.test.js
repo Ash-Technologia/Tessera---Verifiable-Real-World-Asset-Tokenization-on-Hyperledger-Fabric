@@ -28,6 +28,8 @@ try {
 }
 
 const express = require('../backend/node_modules/express');
+const { sign } = require('../backend/src/utils/jwt');
+const testAuthToken = sign({ sub: 'admin', org: 'IssuerMSP', role: 'ADMIN', permissions: ['*'] });
 const contractService = require('../backend/src/services/fabric/contract.service');
 const gatewayService = require('../backend/src/services/fabric/gateway.service');
 const templateService = require('../backend/src/services/templates/template.service');
@@ -307,7 +309,9 @@ async function main() {
       assertEqual(prov.binding.assetId, ASSET_BIND_1, 'Bound assetId present');
 
       // Via REST
-      const res = await fetch(`${baseUrl}/api/tokens/${TOKEN_BIND_1}/provenance`);
+      const res = await fetch(`${baseUrl}/api/tokens/${TOKEN_BIND_1}/provenance`, {
+        headers: { Authorization: `Bearer ${testAuthToken}` },
+      });
       assertEqual(res.status, 200, 'REST GET provenance returns 200');
       const body = await res.json();
       assertEqual(body.binding.assetId, ASSET_BIND_1, 'REST returns bound assetId');
@@ -1029,7 +1033,10 @@ async function main() {
       if (!fabricAvailable) return;
       const res = await fetch(`${baseUrl}/api/assets/${ASSET_STALE}/transfer`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${testAuthToken}`,
+        },
         body: JSON.stringify({
           tokenId: TOKEN_STALE,
           fromOwnerId: OWNER_A,

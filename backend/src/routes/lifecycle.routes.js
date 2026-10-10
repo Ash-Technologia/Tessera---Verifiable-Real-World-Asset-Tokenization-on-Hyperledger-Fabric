@@ -3,6 +3,7 @@
 const express = require('express');
 const { lifecycleService, LIFECYCLE_ERROR_CODES } = require('../services/lifecycle');
 const gatewayService = require('../services/fabric/gateway.service');
+const { requireAuth } = require('../middleware/auth.middleware');
 const logger = require('../utils/logger');
 
 const router = express.Router({ mergeParams: true });
@@ -32,7 +33,7 @@ async function requireFabricConnection(req, res, next) {
 // ============================================================
 // 1. GET /api/assets/:assetId/lifecycle — Current Lifecycle View
 // ============================================================
-router.get('/', requireFabricConnection, async (req, res, next) => {
+router.get('/', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { assetId } = req.params;
   try {
     const lifecycle = await lifecycleService.getAssetLifecycle(assetId);
@@ -56,7 +57,7 @@ router.get('/', requireFabricConnection, async (req, res, next) => {
 // ============================================================
 // 2. GET /api/assets/:assetId/lifecycle/history — Transition History
 // ============================================================
-router.get('/history', requireFabricConnection, async (req, res, next) => {
+router.get('/history', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { assetId } = req.params;
   try {
     const history = await lifecycleService.getAssetLifecycleHistory(assetId);
@@ -83,13 +84,13 @@ router.get('/history', requireFabricConnection, async (req, res, next) => {
 // ============================================================
 async function handleTransition(req, res, next) {
   const { assetId } = req.params;
-  const { toState, reason, metadata, actor } = req.body;
+  const { toState, reason, metadata } = req.body || {};
 
-  // Extract authenticated or declared actor identity
+  // Actor attribution is derived strictly from the authenticated principal
   const actorContext = {
-    identity: actor?.identity || req.headers['x-actor-id'] || 'admin',
-    actorMSP: actor?.actorMSP || req.headers['x-actor-msp'] || 'IssuerMSP',
-    role: actor?.role || req.headers['x-actor-role'] || 'OPERATOR',
+    identity: req.user.userId,
+    actorMSP: req.user.organization,
+    role: req.user.role,
   };
 
   try {
@@ -157,7 +158,7 @@ async function handleTransition(req, res, next) {
   }
 }
 
-router.post('/transition', requireFabricConnection, handleTransition);
-router.post('/', requireFabricConnection, handleTransition);
+router.post('/transition', requireFabricConnection, requireAuth, handleTransition);
+router.post('/', requireFabricConnection, requireAuth, handleTransition);
 
 module.exports = router;

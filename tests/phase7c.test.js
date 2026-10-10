@@ -31,6 +31,13 @@ try {
 }
 
 const express = require('../backend/node_modules/express');
+const { sign } = require('../backend/src/utils/jwt');
+const testAuthToken = sign({ sub: 'admin', org: 'IssuerMSP', role: 'ADMIN', permissions: ['*'] });
+const originalFetch = global.fetch;
+global.fetch = function(url, options = {}) {
+  const headers = { ...(options.headers || {}), Authorization: `Bearer ${testAuthToken}` };
+  return originalFetch(url, { ...options, headers });
+};
 const contractService = require('../backend/src/services/fabric/contract.service');
 const gatewayService = require('../backend/src/services/fabric/gateway.service');
 const templateService = require('../backend/src/services/templates/template.service');

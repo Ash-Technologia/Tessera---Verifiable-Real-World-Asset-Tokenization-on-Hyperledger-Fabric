@@ -28,6 +28,8 @@ try {
 }
 
 const express = require('../backend/node_modules/express');
+const { sign } = require('../backend/src/utils/jwt');
+const testAuthToken = sign({ sub: 'admin', org: 'IssuerMSP', role: 'ADMIN', permissions: ['*'] });
 const contractService = require('../backend/src/services/fabric/contract.service');
 const gatewayService = require('../backend/src/services/fabric/gateway.service');
 const templateService = require('../backend/src/services/templates/template.service');
@@ -161,7 +163,9 @@ async function runAll() {
       assert(lifecycle.allowedNextStates.includes(LIFECYCLE_STATES.UNDER_VERIFICATION), 'Next allowed state is UNDER_VERIFICATION');
 
       // Via REST
-      const res = await fetch(`${baseUrl}/api/assets/${ASSET_LIFECYCLE_1}/lifecycle`);
+      const res = await fetch(`${baseUrl}/api/assets/${ASSET_LIFECYCLE_1}/lifecycle`, {
+        headers: { Authorization: `Bearer ${testAuthToken}` },
+      });
       assertEqual(res.status, 200, 'REST GET returns 200');
       const body = await res.json();
       assertEqual(body.lifecycle.currentState, LIFECYCLE_STATES.REGISTERED, 'REST returns REGISTERED state');
@@ -430,7 +434,9 @@ async function runAll() {
     });
 
     await test('29. Multiple transitions produce multiple immutable records via REST history endpoint', async () => {
-      const res = await fetch(`${baseUrl}/api/assets/${ASSET_LIFECYCLE_1}/lifecycle/history`);
+      const res = await fetch(`${baseUrl}/api/assets/${ASSET_LIFECYCLE_1}/lifecycle/history`, {
+        headers: { Authorization: `Bearer ${testAuthToken}` },
+      });
       assertEqual(res.status, 200, 'REST GET returns 200');
       const body = await res.json();
       assert(body.count >= 7, 'History count is accurate');

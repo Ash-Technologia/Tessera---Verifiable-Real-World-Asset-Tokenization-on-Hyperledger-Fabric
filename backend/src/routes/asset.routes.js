@@ -4,6 +4,9 @@ const express = require('express');
 const contractService = require('../services/fabric/contract.service');
 const gatewayService = require('../services/fabric/gateway.service');
 const templateService = require('../services/templates/template.service');
+const { requireAuth } = require('../middleware/auth.middleware');
+const { requireRoles, requireOrg } = require('../middleware/authorize.middleware');
+const { ROLES, MSPS } = require('../config/auth.config');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -216,9 +219,14 @@ router.get('/', requireFabricConnection, async (req, res, next) => {
 /**
  * Idempotent migration ensuring composite key indexes exist for existing ledger records.
  */
-router.post('/backfill-index', requireFabricConnection, async (req, res, next) => {
+router.post(
+  '/backfill-index',
+  requireFabricConnection,
+  requireAuth,
+  requireRoles(ROLES.ADMIN),
+  async (req, res, next) => {
   try {
-    logger.info('POST /api/assets/backfill-index — Backfill Index Migration');
+    logger.info('POST /api/assets/backfill-index — Backfill Index Migration', { user: req.user.userId });
     const result = await contractService.backfillAssetIndex();
     return res.status(200).json({
       success: true,
@@ -231,7 +239,7 @@ router.post('/backfill-index', requireFabricConnection, async (req, res, next) =
 });
 
 // ============================================================
-// POST /api/assets — CreateAsset (Phase 2)
+// POST /api/assets — CreateAsset (Phase 2 / 9C Protected)
 // ============================================================
 /**
  * Creates a new asset on the TESSERA ledger with full template validation.
@@ -258,7 +266,13 @@ router.post('/backfill-index', requireFabricConnection, async (req, res, next) =
  * Response 409: Duplicate assetId
  * Response 422: Attribute validation failed
  */
-router.post('/', requireFabricConnection, async (req, res, next) => {
+router.post(
+  '/',
+  requireFabricConnection,
+  requireAuth,
+  requireRoles(ROLES.ISSUER, ROLES.ADMIN),
+  requireOrg(MSPS.ISSUER_MSP),
+  async (req, res, next) => {
   const { assetId, assetType, templateId, templateVersion, owner, attributes } = req.body;
 
   // Infer assetType from template if omitted
@@ -420,7 +434,12 @@ router.get('/:assetId/exists', requireFabricConnection, async (req, res, next) =
  * Request body: { "attributes": { ...updated fields... } }
  * Response 200: { success, txId, asset }
  */
-router.patch('/:assetId/attributes', requireFabricConnection, async (req, res, next) => {
+router.patch(
+  '/:assetId/attributes',
+  requireFabricConnection,
+  requireAuth,
+  requireRoles(ROLES.ISSUER, ROLES.ADMIN),
+  async (req, res, next) => {
   const { assetId } = req.params;
   const { attributes } = req.body;
 

@@ -60,6 +60,7 @@ class ValuationService {
     valuer,
     remarks = '',
     valuationId,
+    submittedBy = '',
   }) {
     if (!assetId) throw new Error('assetId is required');
     if (!value || value <= 0) throw new Error('value must be a positive number');
@@ -91,7 +92,7 @@ class ValuationService {
       validUntil,
       source,
       valuer,
-      submittedBy: '', // Will be set by chaincode
+      submittedBy: submittedBy || valuer || '',
       submittedAt: new Date().toISOString(),
       status: 'SUBMITTED',
       remarks,

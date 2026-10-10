@@ -3,6 +3,9 @@
 const express = require('express');
 const transferService = require('../services/transfer/transfer.service');
 const gatewayService = require('../services/fabric/gateway.service');
+const { requireAuth } = require('../middleware/auth.middleware');
+const { requireRoles } = require('../middleware/authorize.middleware');
+const { ROLES } = require('../config/auth.config');
 const logger = require('../utils/logger');
 
 const router = express.Router({ mergeParams: true });
@@ -26,37 +29,16 @@ async function requireFabricConnection(req, res, next) {
   }
 }
 
-// POST /api/assets/:assetId/transfer — Transfer Ownership
-router.post('/transfer', requireFabricConnection, async (req, res, next) => {
-  const { assetId } = req.params;
-  const {
-    tokenId,
-    fromOwnerId,
-    fromOwnerMSP,
-    toOwnerId,
-    toOwnerMSP,
-    amount,
-    reason,
-    transferId,
-    context,
-  } = req.body;
-
-  try {
-    const errors = [];
-    if (!tokenId) errors.push('tokenId is required');
-    if (!fromOwnerId) errors.push('fromOwnerId is required');
-    if (!fromOwnerMSP) errors.push('fromOwnerMSP is required');
-    if (!toOwnerId) errors.push('toOwnerId is required');
-    if (!toOwnerMSP) errors.push('toOwnerMSP is required');
-    if (amount === undefined || amount === null) errors.push('amount is required');
-
-    if (errors.length > 0) {
-      return res.status(400).json({ success: false, errors });
-    }
-
-    const result = await transferService.transferOwnership({
+// POST /api/assets/:assetId/transfer — Transfer Ownership (Phase 5 / 9C Protected)
+router.post(
+  '/transfer',
+  requireFabricConnection,
+  requireAuth,
+  requireRoles(ROLES.ISSUER, ROLES.ADMIN, ROLES.INVESTOR),
+  async (req, res, next) => {
+    const { assetId } = req.params;
+    const {
       tokenId,
-      assetId,
       fromOwnerId,
       fromOwnerMSP,
       toOwnerId,
@@ -65,56 +47,62 @@ router.post('/transfer', requireFabricConnection, async (req, res, next) => {
       reason,
       transferId,
       context,
-    });
+    } = req.body || {};
 
-    res.status(201).json({
-      success: true,
-      message: `Ownership transferred for token ${tokenId}`,
-      txId: result.txId,
-      transfer: result.transfer,
-      policyDecision: result.policyDecision,
-    });
-  } catch (err) {
-    if (err.isLifecycleRejection || err.error === 'TOKEN_OPERATION_BLOCKED_BY_ASSET_STATE') {
-      return res.status(422).json({
-        success: false,
-        error: 'TOKEN_OPERATION_BLOCKED_BY_ASSET_STATE',
-        decision: 'DENY',
-        assetId: err.assetId,
-        tokenId: err.tokenId,
-        assetState: err.assetState,
-        operation: err.operation || 'TRANSFER',
-        reasonCode: err.reasonCode,
-        message: err.message,
+    try {
+      const errors = [];
+      if (!tokenId) errors.push('tokenId is required');
+      if (!fromOwnerId) errors.push('fromOwnerId is required');
+      if (!fromOwnerMSP) errors.push('fromOwnerMSP is required');
+      if (!toOwnerId) errors.push('toOwnerId is required');
+      if (!toOwnerMSP) errors.push('toOwnerMSP is required');
+      if (amount === undefined || amount === null) errors.push('amount is required');
+
+      if (errors.length > 0) {
+        return res.status(400).json({ success: false, errors });
+      }
+
+      const result = await transferService.transferOwnership({
+        tokenId,
+        assetId,
+        fromOwnerId,
+        fromOwnerMSP,
+        toOwnerId,
+        toOwnerMSP,
+        amount: parseFloat(amount),
+        reason,
+        transferId,
+        context,
       });
-    }
-    if (err.isPolicyRejection || (err.message && err.message.startsWith('TRANSFER_REJECTED_BY_POLICY'))) {
-      return res.status(403).json({
-        success: false,
-        error: 'TRANSFER_REJECTED_BY_POLICY',
-        decision: err.decision || 'DENY',
-        policyId: err.policyId,
-        policyVersion: err.policyVersion,
-        scope: err.scope,
-        reasonCodes: err.reasonCodes || [],
-        deniedRules: err.deniedRules || [],
+
+      res.status(200).json({
+        success: true,
+        message: `Transferred ${amount} tokens from ${fromOwnerId} to ${toOwnerId}`,
+        txId: result.txId,
+        transfer: result.transfer,
       });
+    } catch (err) {
+      if (err.statusCode === 404) {
+        return res.status(404).json({ success: false, error: err.message });
+      }
+      if (err.statusCode === 422) {
+        return res.status(422).json({
+          success: false,
+          error: err.reasonCode || 'TRANSFER_REJECTED',
+          message: err.message,
+          assetState: err.assetState,
+          operation: err.operation,
+          reasonCode: err.reasonCode,
+          policyEvaluation: err.policyEvaluation,
+        });
+      }
+      next(err);
     }
-    if (err.statusCode === 404) {
-      return res.status(404).json({ success: false, error: err.message });
-    }
-    if (err.statusCode === 422 || err.message.includes('INSUFFICIENT_BALANCE') || err.message.includes('SELF_TRANSFER_NOT_ALLOWED') || err.message.includes('INVALID_TRANSFER_AMOUNT') || err.message.includes('TOKEN_NOT_FOUND') || err.message.includes('TOKEN_NOT_ACTIVE') || err.message.includes('OWNER_NOT_FOUND')) {
-      return res.status(422).json({
-        success: false,
-        error: err.message,
-      });
-    }
-    next(err);
   }
-});
+);
 
-// GET /api/assets/:assetId/transfers/:transferId — Get Transfer by ID
-router.get('/transfers/:transferId', requireFabricConnection, async (req, res, next) => {
+// GET /api/assets/:assetId/transfers/:transferId — Get Transfer Record
+router.get('/transfers/:transferId', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { transferId } = req.params;
 
   try {
@@ -124,29 +112,19 @@ router.get('/transfers/:transferId', requireFabricConnection, async (req, res, n
     }
     res.json({ success: true, transfer });
   } catch (err) {
-    if (err.message && err.message.includes('does not exist')) {
+    if (err.message && err.message.includes('not found')) {
       return res.status(404).json({ success: false, error: err.message });
     }
     next(err);
   }
 });
 
-// GET /api/assets/:assetId/transfers — List Transfers for Asset
-router.get('/transfers', requireFabricConnection, async (req, res, next) => {
+// GET /api/assets/:assetId/transfers — List Asset Transfers
+router.get('/transfers', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { assetId } = req.params;
-  const { tokenId, ownerId, ownerMSP } = req.query;
 
   try {
-    let transfers = [];
-
-    if (tokenId) {
-      transfers = await transferService.listTokenTransfers(tokenId);
-    } else if (ownerId && ownerMSP) {
-      transfers = await transferService.listOwnerTransfers(ownerId, ownerMSP);
-    } else {
-      transfers = await transferService.listAssetTransfers(assetId);
-    }
-
+    const transfers = await transferService.listAssetTransfers(assetId);
     res.json({
       success: true,
       assetId,
@@ -158,34 +136,37 @@ router.get('/transfers', requireFabricConnection, async (req, res, next) => {
   }
 });
 
-// GET /api/assets/:assetId/transfer/validate — Validate Transfer Participants
-router.get('/transfer/validate', requireFabricConnection, async (req, res, next) => {
+// GET /api/assets/:assetId/transfer/validate — Pre-Validate Transfer
+router.get('/transfer/validate', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { assetId } = req.params;
-  const { fromOwnerId, fromOwnerMSP, toOwnerId, toOwnerMSP } = req.query;
+  const { tokenId, fromOwnerId, fromOwnerMSP, toOwnerId, toOwnerMSP, amount } = req.query;
 
   try {
-    const errors = [];
-    if (!fromOwnerId) errors.push('fromOwnerId is required');
-    if (!fromOwnerMSP) errors.push('fromOwnerMSP is required');
-    if (!toOwnerId) errors.push('toOwnerId is required');
-    if (!toOwnerMSP) errors.push('toOwnerMSP is required');
-
-    if (errors.length > 0) {
-      return res.status(400).json({ success: false, errors });
+    if (!tokenId || !fromOwnerId || !fromOwnerMSP || !toOwnerId || !toOwnerMSP || !amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'tokenId, fromOwnerId, fromOwnerMSP, toOwnerId, toOwnerMSP, and amount query parameters are required',
+      });
     }
 
-    const validation = await transferService.validateTransferParticipants(
+    const validation = await transferService.validateTransfer({
+      tokenId,
+      assetId,
       fromOwnerId,
       fromOwnerMSP,
       toOwnerId,
-      toOwnerMSP
-    );
+      toOwnerMSP,
+      amount: parseFloat(amount),
+    });
 
     res.json({
       success: true,
-      validation,
+      ...validation,
     });
   } catch (err) {
+    if (err.statusCode === 404) {
+      return res.status(404).json({ success: false, error: err.message });
+    }
     next(err);
   }
 });

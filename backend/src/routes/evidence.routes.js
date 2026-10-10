@@ -6,6 +6,9 @@ const evidenceService = require('../services/evidence/evidence.service');
 const minioService = require('../services/storage/minio.service');
 const contractService = require('../services/fabric/contract.service');
 const gatewayService = require('../services/fabric/gateway.service');
+const { requireAuth } = require('../middleware/auth.middleware');
+const { requireRoles, requireOrg } = require('../middleware/authorize.middleware');
+const { ROLES, MSPS } = require('../config/auth.config');
 const logger = require('../utils/logger');
 
 const router = express.Router({ mergeParams: true });
@@ -41,78 +44,84 @@ async function requireFabricConnection(req, res, next) {
 // ============================================================
 // 1. POST /api/assets/:assetId/evidence — Submit Evidence
 // ============================================================
-router.post('/evidence', requireFabricConnection, upload.single('file'), async (req, res, next) => {
-  const { assetId } = req.params;
-  const {
-    type,
-    source,
-    attester,
-    expiresAt,
-    remarks,
-    version,
-    supersedesEvidenceId,
-    evidenceId,
-    content, // fallback text/json content if file not uploaded as multipart
-  } = req.body;
-
-  try {
-    let fileBuffer;
-    let fileName;
-    let mimeType;
-
-    if (req.file) {
-      fileBuffer = req.file.buffer;
-      fileName = req.file.originalname;
-      mimeType = req.file.mimetype;
-    } else if (content) {
-      // Allow passing content as string for lightweight/simulated testing
-      fileBuffer = Buffer.from(content, 'utf-8');
-      fileName = req.body.fileName || `${type.toLowerCase()}_evidence.txt`;
-      mimeType = req.body.mimeType || 'text/plain';
-    } else {
-      return res.status(400).json({
-        success: false,
-        error: 'A file attachment (form field "file") or "content" body field is required',
-      });
-    }
-
-    if (!type) {
-      return res.status(400).json({
-        success: false,
-        error: 'Evidence "type" is required (e.g., OWNERSHIP_PROOF, TITLE_DEED)',
-      });
-    }
-
-    const result = await evidenceService.submitEvidence({
-      assetId,
+router.post(
+  '/evidence',
+  requireFabricConnection,
+  requireAuth,
+  requireRoles(ROLES.ISSUER, ROLES.ADMIN, ROLES.VERIFIER),
+  upload.single('file'),
+  async (req, res, next) => {
+    const { assetId } = req.params;
+    const {
       type,
-      fileName,
-      buffer: fileBuffer,
-      mimeType,
-      source,
-      attester,
       expiresAt,
       remarks,
-      version: version ? parseInt(version, 10) : 1,
+      version,
       supersedesEvidenceId,
       evidenceId,
-    });
+      content, // fallback text/json content if file not uploaded as multipart
+    } = req.body;
 
-    res.status(201).json({
-      success: true,
-      message: `Evidence committed to Fabric ledger for asset ${assetId}`,
-      txId: result.txId,
-      evidence: result.evidence,
-    });
-  } catch (err) {
-    next(err);
+    try {
+      let fileBuffer;
+      let fileName;
+      let mimeType;
+
+      if (req.file) {
+        fileBuffer = req.file.buffer;
+        fileName = req.file.originalname;
+        mimeType = req.file.mimetype;
+      } else if (content) {
+        // Allow passing content as string for lightweight/simulated testing
+        fileBuffer = Buffer.from(content, 'utf-8');
+        fileName = req.body.fileName || `${type.toLowerCase()}_evidence.txt`;
+        mimeType = req.body.mimeType || 'text/plain';
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'A file attachment (form field "file") or "content" body field is required',
+        });
+      }
+
+      if (!type) {
+        return res.status(400).json({
+          success: false,
+          error: 'Evidence "type" is required (e.g., OWNERSHIP_PROOF, TITLE_DEED)',
+        });
+      }
+
+      // Attester and source bound to authenticated identity
+      const result = await evidenceService.submitEvidence({
+        assetId,
+        type,
+        fileName,
+        buffer: fileBuffer,
+        mimeType,
+        source: req.user.organization,
+        attester: req.user.userId,
+        expiresAt,
+        remarks,
+        version: version ? parseInt(version, 10) : 1,
+        supersedesEvidenceId,
+        evidenceId,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: `Evidence committed to Fabric ledger for asset ${assetId}`,
+        txId: result.txId,
+        evidence: result.evidence,
+      });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 // ============================================================
 // 2. GET /api/assets/:assetId/evidence — List Asset Evidence
 // ============================================================
-router.get('/evidence', requireFabricConnection, async (req, res, next) => {
+router.get('/evidence', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { assetId } = req.params;
   try {
     const evidenceList = await evidenceService.listAssetEvidence(assetId);
@@ -130,7 +139,7 @@ router.get('/evidence', requireFabricConnection, async (req, res, next) => {
 // ============================================================
 // 3. GET /api/assets/:assetId/evidence/:evidenceId — Get Evidence
 // ============================================================
-router.get('/evidence/:evidenceId', requireFabricConnection, async (req, res, next) => {
+router.get('/evidence/:evidenceId', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { evidenceId } = req.params;
   try {
     const evidence = await evidenceService.getEvidence(evidenceId);
@@ -146,7 +155,7 @@ router.get('/evidence/:evidenceId', requireFabricConnection, async (req, res, ne
 // ============================================================
 // 4. GET /api/assets/:assetId/evidence/:evidenceId/download — Download File
 // ============================================================
-router.get('/evidence/:evidenceId/download', requireFabricConnection, async (req, res, next) => {
+router.get('/evidence/:evidenceId/download', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { evidenceId } = req.params;
   try {
     const evidence = await evidenceService.getEvidence(evidenceId);
@@ -168,7 +177,7 @@ router.get('/evidence/:evidenceId/download', requireFabricConnection, async (req
 // ============================================================
 // 5. GET /api/assets/:assetId/evidence/:evidenceId/verify-integrity
 // ============================================================
-router.get('/evidence/:evidenceId/verify-integrity', requireFabricConnection, async (req, res, next) => {
+router.get('/evidence/:evidenceId/verify-integrity', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { evidenceId } = req.params;
   try {
     const integrity = await evidenceService.verifyEvidenceIntegrity(evidenceId);
@@ -184,7 +193,7 @@ router.get('/evidence/:evidenceId/verify-integrity', requireFabricConnection, as
 // ============================================================
 // 6. GET /api/assets/:assetId/verification-readiness
 // ============================================================
-router.get('/verification-readiness', requireFabricConnection, async (req, res, next) => {
+router.get('/verification-readiness', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { assetId } = req.params;
   try {
     const readiness = await evidenceService.checkVerificationReadiness(assetId);
@@ -200,43 +209,54 @@ router.get('/verification-readiness', requireFabricConnection, async (req, res, 
 // ============================================================
 // 7. POST /api/assets/:assetId/verify — Independent Maker-Checker Attestation
 // ============================================================
-router.post('/verify', requireFabricConnection, async (req, res, next) => {
-  const { assetId } = req.params;
-  const { decision, verifierIdentity, organization, evidenceReviewed, remarks } = req.body;
+router.post(
+  '/verify',
+  requireFabricConnection,
+  requireAuth,
+  requireRoles(ROLES.VERIFIER),
+  requireOrg(MSPS.VERIFIER_MSP),
+  async (req, res, next) => {
+    const { assetId } = req.params;
+    const { decision, evidenceReviewed, remarks } = req.body || {};
 
-  try {
-    const result = await evidenceService.verifyAsset({
-      assetId,
-      decision,
-      verifierIdentity,
-      organization,
-      evidenceReviewed,
-      remarks,
-    });
+    // Authority derived strictly from authenticated user. Client header/body spoofing ignored.
+    const verifierPrincipal = req.user.userId;
+    const organizationPrincipal = req.user.organization;
 
-    res.json({
-      success: true,
-      message: `Asset ${assetId} verification recorded: ${decision}`,
-      txId: result.txId,
-      verification: result.verification,
-      asset: result.asset,
-    });
-  } catch (err) {
-    if (err.statusCode) {
-      return res.status(err.statusCode).json({
-        success: false,
-        error: err.message,
-        readiness: err.readiness || null,
+    try {
+      const result = await evidenceService.verifyAsset({
+        assetId,
+        decision,
+        verifierIdentity: verifierPrincipal,
+        organization: organizationPrincipal,
+        evidenceReviewed,
+        remarks,
       });
+
+      res.json({
+        success: true,
+        message: `Asset ${assetId} verification recorded: ${decision}`,
+        txId: result.txId,
+        verification: result.verification,
+        asset: result.asset,
+      });
+    } catch (err) {
+      if (err.statusCode) {
+        return res.status(err.statusCode).json({
+          success: false,
+          error: err.message,
+          readiness: err.readiness || null,
+        });
+      }
+      next(err);
     }
-    next(err);
   }
-});
+);
 
 // ============================================================
 // 8. GET /api/assets/:assetId/verifications — Verification History
 // ============================================================
-router.get('/verifications', requireFabricConnection, async (req, res, next) => {
+router.get('/verifications', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { assetId } = req.params;
   try {
     const history = await evidenceService.getVerificationHistory(assetId);
@@ -254,25 +274,31 @@ router.get('/verifications', requireFabricConnection, async (req, res, next) => 
 // ============================================================
 // 9. PATCH /api/assets/:assetId/status — Lifecycle State Transition
 // ============================================================
-router.patch('/status', requireFabricConnection, async (req, res, next) => {
-  const { assetId } = req.params;
-  const { status, remarks } = req.body;
+router.patch(
+  '/status',
+  requireFabricConnection,
+  requireAuth,
+  requireRoles(ROLES.ISSUER, ROLES.ADMIN),
+  async (req, res, next) => {
+    const { assetId } = req.params;
+    const { status, remarks } = req.body || {};
 
-  if (!status) {
-    return res.status(400).json({ success: false, error: 'status is required' });
-  }
+    if (!status) {
+      return res.status(400).json({ success: false, error: 'status is required' });
+    }
 
-  try {
-    const result = await contractService.updateAssetStatus(assetId, status, remarks || '');
-    res.json({
-      success: true,
-      message: `Asset ${assetId} status updated to ${status}`,
-      txId: result.txId,
-      asset: result.asset,
-    });
-  } catch (err) {
-    next(err);
+    try {
+      const result = await contractService.updateAssetStatus(assetId, status, remarks || '');
+      res.json({
+        success: true,
+        message: `Asset ${assetId} status updated to ${status}`,
+        txId: result.txId,
+        asset: result.asset,
+      });
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 module.exports = router;

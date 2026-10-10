@@ -82,6 +82,34 @@ function extractMessage(body, fallback) {
   return fallback;
 }
 
+let currentAuthToken = null;
+try {
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    currentAuthToken = window.sessionStorage.getItem('tessera_auth_token');
+  }
+} catch {}
+
+export function setAuthToken(token) {
+  currentAuthToken = token || null;
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      if (token) {
+        window.sessionStorage.setItem('tessera_auth_token', token);
+      } else {
+        window.sessionStorage.removeItem('tessera_auth_token');
+      }
+    }
+  } catch {}
+}
+
+export function getAuthToken() {
+  return currentAuthToken;
+}
+
+export function clearAuthToken() {
+  setAuthToken(null);
+}
+
 /**
  * Core request primitive.
  *
@@ -130,6 +158,7 @@ export async function apiRequest(path, options = {}) {
       headers: {
         Accept: 'application/json',
         ...(body !== undefined && !isFormData ? { 'Content-Type': 'application/json' } : {}),
+        ...(currentAuthToken ? { Authorization: `Bearer ${currentAuthToken}` } : {}),
         ...headers,
       },
       body: body !== undefined ? (isFormData ? body : JSON.stringify(body)) : undefined,

@@ -5,6 +5,7 @@ const tokenService = require('../services/token/token.service');
 const ownershipService = require('../services/ownership/ownership.service');
 const transferService = require('../services/transfer/transfer.service');
 const gatewayService = require('../services/fabric/gateway.service');
+const { requireAuth } = require('../middleware/auth.middleware');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -28,9 +29,9 @@ async function requireFabricConnection(req, res, next) {
   }
 }
 
-// Phase 5 ownership and history queries.  These precede /:tokenId so Express
+// Phase 5 ownership and history queries. These precede /:tokenId so Express
 // does not interpret `owners` or `transfers` as a token identifier.
-router.get('/:tokenId/owners', requireFabricConnection, async (req, res, next) => {
+router.get('/:tokenId/owners', requireFabricConnection, requireAuth, async (req, res, next) => {
   try {
     const token = await tokenService.getToken(req.params.tokenId);
     const owners = await ownershipService.getTokenOwners(req.params.tokenId);
@@ -38,7 +39,7 @@ router.get('/:tokenId/owners', requireFabricConnection, async (req, res, next) =
   } catch (err) { next(err); }
 });
 
-router.get('/:tokenId/ownership/:ownerId', requireFabricConnection, async (req, res, next) => {
+router.get('/:tokenId/ownership/:ownerId', requireFabricConnection, requireAuth, async (req, res, next) => {
   try {
     const ownerMSP = req.query.ownerMSP;
     if (!ownerMSP) return res.status(400).json({ success: false, error: 'ownerMSP query parameter is required' });
@@ -47,7 +48,7 @@ router.get('/:tokenId/ownership/:ownerId', requireFabricConnection, async (req, 
   } catch (err) { next(err); }
 });
 
-router.get('/:tokenId/balance/:ownerId', requireFabricConnection, async (req, res, next) => {
+router.get('/:tokenId/balance/:ownerId', requireFabricConnection, requireAuth, async (req, res, next) => {
   try {
     const ownerMSP = req.query.ownerMSP;
     if (!ownerMSP) return res.status(400).json({ success: false, error: 'ownerMSP query parameter is required' });
@@ -56,13 +57,13 @@ router.get('/:tokenId/balance/:ownerId', requireFabricConnection, async (req, re
   } catch (err) { next(err); }
 });
 
-router.get('/:tokenId/transfers', requireFabricConnection, async (req, res, next) => {
+router.get('/:tokenId/transfers', requireFabricConnection, requireAuth, async (req, res, next) => {
   try { res.json({ success: true, transfers: await transferService.listTokenTransfers(req.params.tokenId) }); }
   catch (err) { next(err); }
 });
 
 // GET /api/tokens/:tokenId — Get Token by ID
-router.get('/:tokenId', requireFabricConnection, async (req, res, next) => {
+router.get('/:tokenId', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { tokenId } = req.params;
 
   try {
@@ -80,7 +81,7 @@ router.get('/:tokenId', requireFabricConnection, async (req, res, next) => {
 });
 
 // GET /api/tokens/:tokenId/asset — Get Asset by Token (full traceability)
-router.get('/:tokenId/asset', requireFabricConnection, async (req, res, next) => {
+router.get('/:tokenId/asset', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { tokenId } = req.params;
 
   try {
@@ -98,7 +99,7 @@ router.get('/:tokenId/asset', requireFabricConnection, async (req, res, next) =>
 });
 
 // GET /api/tokens/:tokenId/lifecycle-rights — Get Lifecycle Rights for Token
-router.get('/:tokenId/lifecycle-rights', requireFabricConnection, async (req, res, next) => {
+router.get('/:tokenId/lifecycle-rights', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { tokenId } = req.params;
   try {
     const rights = await tokenService.getTokenLifecycleRights(tokenId);
@@ -112,7 +113,7 @@ router.get('/:tokenId/lifecycle-rights', requireFabricConnection, async (req, re
 });
 
 // GET /api/tokens/:tokenId/provenance — Get Full Provenance & Lifecycle Traceability
-router.get('/:tokenId/provenance', requireFabricConnection, async (req, res, next) => {
+router.get('/:tokenId/provenance', requireFabricConnection, requireAuth, async (req, res, next) => {
   const { tokenId } = req.params;
   try {
     const provenance = await tokenService.getTokenProvenance(tokenId);

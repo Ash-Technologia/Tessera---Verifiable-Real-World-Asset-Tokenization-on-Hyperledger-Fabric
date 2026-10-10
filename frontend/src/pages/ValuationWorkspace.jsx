@@ -767,7 +767,7 @@ export function ValuationWorkspace() {
                 Active Attestation Identity: <strong style={{ color: 'var(--ts-ink)' }}>{identity.userId}</strong> ({identity.role}) • MSP: <strong style={{ color: 'var(--ts-ink)' }}>{identity.mspId}</strong>
               </div>
               <div style={{ fontSize: 'var(--ts-text-xs)', color: 'var(--ts-ink-muted)', marginTop: '0.2rem' }}>
-                Note: Client persona headers are passed to the backend. The Fabric ledger enforces immutability and records submitter identity permanently.
+                Note: Server-enforced authentication active. Principal and organization claims are cryptographically verified; client header spoofing is rejected.
               </div>
             </div>
 
