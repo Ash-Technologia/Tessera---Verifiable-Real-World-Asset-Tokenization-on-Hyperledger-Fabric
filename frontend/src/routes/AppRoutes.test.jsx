@@ -82,6 +82,16 @@ describe('routing foundation', () => {
     await waitFor(() => expect(screen.getByText(/Transfer Workspace: VEH-2025-001/)).toBeInTheDocument());
   });
 
+  it('renders live lifecycle workspace at /assets/:assetId/lifecycle', async () => {
+    renderAt('/assets/VEH-2025-001/lifecycle');
+    await waitFor(() => expect(screen.getByText(/Asset Lifecycle: VEH-2025-001/)).toBeInTheDocument());
+  });
+
+  it('renders live audit time machine workspace at /assets/:assetId/audit', async () => {
+    renderAt('/assets/VEH-2025-001/audit');
+    await waitFor(() => expect(screen.getByText(/Audit Time Machine: VEH-2025-001/)).toBeInTheDocument());
+  });
+
   it('renders a 404 page for unknown routes', async () => {
     renderAt('/nope-not-here');
     await waitFor(() => expect(screen.getByText('Page not found')).toBeInTheDocument());

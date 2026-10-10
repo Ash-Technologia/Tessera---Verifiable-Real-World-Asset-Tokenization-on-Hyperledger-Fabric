@@ -73,7 +73,14 @@ export function AssetOverview() {
                 ]}
               />
             </Card>
-            <Card title="Lifecycle">
+            <Card
+              title="Lifecycle"
+              action={
+                <Link to={`/assets/${encodeURIComponent(assetId)}/lifecycle`}>
+                  <Button size="sm" variant="secondary">Manage Lifecycle →</Button>
+                </Link>
+              }
+            >
               {lifecycle.error ? (
                 <p className="ts-metadata">Lifecycle view unavailable: {lifecycle.error.message}</p>
               ) : (
@@ -220,13 +227,15 @@ export function AssetOverview() {
                 <Link to={`/assets/${encodeURIComponent(assetId)}/transfers`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
                   transfers (Phase 8E Live)
                 </Link>
-                {['lifecycle', 'audit', 'passport'].map(
-                  (seg) => (
-                    <Link key={seg} to={`/assets/${encodeURIComponent(assetId)}/${seg}`}>
-                      {seg}
-                    </Link>
-                  ),
-                )}
+                <Link to={`/assets/${encodeURIComponent(assetId)}/lifecycle`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
+                  lifecycle (Phase 8F Live)
+                </Link>
+                <Link to={`/assets/${encodeURIComponent(assetId)}/audit`} style={{ fontWeight: 600, color: 'var(--ts-primary)' }}>
+                  audit (Phase 8F Live)
+                </Link>
+                <Link to={`/assets/${encodeURIComponent(assetId)}/passport`}>
+                  passport
+                </Link>
               </p>
               <p className="ts-metadata">
                 <ProvenanceLine channel="tessera-channel" />
