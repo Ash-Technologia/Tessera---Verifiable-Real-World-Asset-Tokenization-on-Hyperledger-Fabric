@@ -106,6 +106,11 @@ describe('routing foundation', () => {
     await waitFor(() => expect(screen.getByText(/Audit Time Machine: VEH-2025-001/)).toBeInTheDocument());
   });
 
+  it('renders live operational health workspace at /health and /diagnostics', async () => {
+    renderAt('/health');
+    await waitFor(() => expect(screen.getByText(/Operational Health & Network Diagnostics/)).toBeInTheDocument());
+  });
+
   it('renders a 404 page for unknown routes', async () => {
     renderAt('/nope-not-here');
     await waitFor(() => expect(screen.getByText('Page not found')).toBeInTheDocument());

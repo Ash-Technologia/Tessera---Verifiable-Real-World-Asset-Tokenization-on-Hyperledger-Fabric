@@ -12,6 +12,7 @@ import { TransferWorkspace } from '../pages/TransferWorkspace.jsx';
 import { LifecycleWorkspace } from '../pages/LifecycleWorkspace.jsx';
 import { AuditWorkspace } from '../pages/AuditWorkspace.jsx';
 import { PassportWorkspace } from '../pages/PassportWorkspace.jsx';
+import { OperationalHealthWorkspace } from '../pages/OperationalHealthWorkspace.jsx';
 import { PhasePlaceholder } from '../pages/PhasePlaceholder.jsx';
 import { NotFound } from '../pages/NotFound.jsx';
 
@@ -37,6 +38,8 @@ export function AppRoutes() {
       <Route path="/assets/:assetId/lifecycle" element={<LifecycleWorkspace />} />
       <Route path="/assets/:assetId/audit" element={<AuditWorkspace />} />
       <Route path="/assets/:assetId/passport" element={<PassportWorkspace />} />
+      <Route path="/health" element={<OperationalHealthWorkspace />} />
+      <Route path="/diagnostics" element={<OperationalHealthWorkspace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

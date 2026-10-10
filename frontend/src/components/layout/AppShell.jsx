@@ -12,6 +12,7 @@ const NAV_SECTIONS = [
     links: [
       { to: '/', label: 'Home', end: true },
       { to: '/dashboard', label: 'Dashboard' },
+      { to: '/health', label: 'Operational Health' },
     ],
   },
   {

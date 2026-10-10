@@ -7,12 +7,21 @@ function healthRequest(path) {
   // Health endpoints live at the server root, not under /api.
   const url = new URL(path, `${HEALTH_BASE_URL}/`);
   return fetch(url.toString(), { headers: { Accept: 'application/json' } }).then(async (res) => {
+    let body = null;
+    try {
+      body = await res.json();
+    } catch {
+      // Non-JSON response
+    }
+
     if (!res.ok) {
-      const err = new Error(`Health probe failed with status ${res.status}`);
+      const message = body?.error || body?.message || `Health probe failed with status ${res.status}`;
+      const err = new Error(message);
       err.status = res.status;
+      err.details = body;
       throw err;
     }
-    return res.json();
+    return body;
   });
 }
 

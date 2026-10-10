@@ -387,4 +387,25 @@ describe('PassportWorkspace (Phase 8G)', () => {
     expect(screen.queryByText('INTEGRITY VERIFIED')).not.toBeInTheDocument();
     expect(screen.queryByText('HASH MISMATCH / TAMPERED')).not.toBeInTheDocument();
   });
+
+  it('discloses canonical hashed representation and volatile excluded fields in integrity card', async () => {
+    vi.spyOn(passportApi, 'get').mockResolvedValueOnce({
+      success: true,
+      passport: mockPassportData,
+      integrity: mockPassportData.integrity,
+    });
+    vi.spyOn(passportApi, 'verify').mockResolvedValueOnce(mockValidVerification);
+
+    renderWorkspace();
+
+    await waitFor(() => {
+      expect(screen.getByText('Cryptographic Ground Truth & Verification Guarantees')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/Included in SHA-256 Digest:/)).toBeInTheDocument();
+    expect(screen.getByText(/Excluded from Digest \(Volatile Metadata\):/)).toBeInTheDocument();
+    expect(screen.getByText('integrity.passportHash')).toBeInTheDocument();
+    expect(screen.getByText('generatedAt')).toBeInTheDocument();
+    expect(screen.getByText('provenance.lastLedgerSync')).toBeInTheDocument();
+  });
 });

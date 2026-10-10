@@ -23,6 +23,7 @@ describe('application shell', () => {
     expect(screen.getByText('TESSERA')).toBeInTheDocument();
     expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Assets')).toBeInTheDocument();
+    expect(screen.getByText('Operational Health')).toBeInTheDocument();
     expect(screen.getByText('page body')).toBeInTheDocument();
     expect(screen.getByText('frontend-service-identity')).toBeInTheDocument();
     expect(screen.getByText(/IssuerMSP/)).toBeInTheDocument();

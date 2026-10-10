@@ -300,8 +300,21 @@ export function PassportWorkspace() {
       <Card title="Cryptographic Ground Truth & Verification Guarantees">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
           <p className="ts-body" style={{ margin: 0 }}>
-            <strong>What Passport Verification Proves:</strong> TESSERA computes a deterministic SHA-256 digest over the alphabetically sorted canonical JSON representation of this passport (excluding volatile generation metadata). A matching hash guarantees that the in-memory passport document has not been altered since construction.
+            <strong>What Passport Verification Proves:</strong> TESSERA computes a deterministic SHA-256 digest over the alphabetically sorted canonical JSON representation of this passport. A matching hash guarantees that the in-memory passport document has not been altered since construction relative to its canonical serialization.
           </p>
+          <div style={{ background: 'var(--ts-surface-subtle, #f8f9fa)', padding: '0.8rem', borderRadius: '4px' }}>
+            <span className="ts-metadata" style={{ display: 'block', marginBottom: '0.3rem', fontWeight: 600 }}>
+              Canonical Serialization Field Specification:
+            </span>
+            <ul className="ts-metadata" style={{ margin: 0, paddingLeft: '1.2rem', lineHeight: 1.6 }}>
+              <li>
+                <strong>Included in SHA-256 Digest:</strong> <span className="ts-mono">passportVersion</span>, <span className="ts-mono">passportId</span>, <span className="ts-mono">asset</span>, <span className="ts-mono">verification</span>, <span className="ts-mono">evidence</span>, <span className="ts-mono">valuation</span>, <span className="ts-mono">lifecycle</span>, <span className="ts-mono">tokenization</span>, <span className="ts-mono">ownership</span>, <span className="ts-mono">restrictions</span>, <span className="ts-mono">provenance.fabricChannel</span>, <span className="ts-mono">provenance.transactions</span>, <span className="ts-mono">integrity.algorithm</span>.
+              </li>
+              <li>
+                <strong>Excluded from Digest (Volatile Metadata):</strong> <span className="ts-mono">integrity.passportHash</span> (prevents circularity), <span className="ts-mono">generatedAt</span>, and <span className="ts-mono">provenance.lastLedgerSync</span>. These volatile fields are omitted so identical authoritative world states always yield an identical fingerprint. <em>Consequently, excluded timestamps are not protected by the document hash.</em>
+              </li>
+            </ul>
+          </div>
           <p className="ts-metadata" style={{ margin: 0, lineHeight: 1.5 }}>
             <strong>Authoritative Ledger Consistency:</strong> When Fabric ledger verification is enabled, the backend checks whether underlying on-chain records (lifecycle status, certified valuation, token minting, asset attributes) have advanced since generation. If the ledger has changed, the passport is flagged as <em>STALE</em>, not tampered.
           </p>

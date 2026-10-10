@@ -162,18 +162,23 @@ export function Dashboard() {
       <Card
         title="Platform Connectivity & Infrastructure"
         actions={
-          (backend.error || fabric.error) ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                backend.retry();
-                fabric.retry();
-              }}
-            >
-              Retry Connectivity
-            </Button>
-          ) : null
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <Link to="/health" className="ts-btn ts-btn-sm ts-btn-secondary" style={{ textDecoration: 'none' }}>
+              Full Diagnostics & Topology →
+            </Link>
+            {(backend.error || fabric.error) ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  backend.retry();
+                  fabric.retry();
+                }}
+              >
+                Retry
+              </Button>
+            ) : null}
+          </div>
         }
       >
         <div className="ts-grid-3">
