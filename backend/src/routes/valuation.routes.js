@@ -148,6 +148,8 @@ router.post('/valuations/simulate', requireFabricConnection, async (req, res, ne
   } catch (err) {
     next(err);
   }
+});
+
 // POST /api/assets/:assetId/valuations/:valuationId/validate — Validate Appraisal (Maker-Checker Enforced)
 router.post('/valuations/:valuationId/validate', requireFabricConnection, async (req, res, next) => {
   const { assetId, valuationId } = req.params;
