@@ -89,6 +89,29 @@ describe('valuationApi service', () => {
     expect(res.simulatedValuation.value).toBe(750000);
     expect(fetchMock.mock.calls[0][1].method).toBe('POST');
   });
+
+  it('validates a submitted appraisal via POST /valuations/:valuationId/validate', async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse(200, {
+        success: true,
+        txId: 'tx-validate-1',
+        valuation: { valuationId: 'VAL-1', status: 'VALID' },
+        message: 'Valuation validated',
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const res = await valuationApi.validate('ASSET-01', 'VAL-1', {
+      validatorIdentity: 'verifier-bob',
+      organization: 'VerifierMSP',
+      reason: 'Appraisal certified',
+    });
+    expect(res.success).toBe(true);
+    expect(res.txId).toBe('tx-validate-1');
+    expect(res.valuation.status).toBe('VALID');
+    expect(fetchMock.mock.calls[0][0]).toBe(`${API_BASE_URL}/assets/ASSET-01/valuations/VAL-1/validate`);
+    expect(fetchMock.mock.calls[0][1].method).toBe('POST');
+  });
 });
 
 describe('approvalApi service', () => {

@@ -121,6 +121,7 @@ app.get('/', (req, res) => {
       listValuations:         'GET /api/assets/:assetId/valuations',
       getValuation:           'GET /api/assets/:assetId/valuations/:valuationId',
       valuationReadiness:     'GET /api/assets/:assetId/valuation-readiness',
+      validateValuation:      'POST /api/assets/:assetId/valuations/:valuationId/validate',
       simulateValuation:      'POST /api/assets/:assetId/valuations/simulate',
       // Phase 4 — Tokenization Approval
       createApproval:         'POST /api/assets/:assetId/tokenization-approval',

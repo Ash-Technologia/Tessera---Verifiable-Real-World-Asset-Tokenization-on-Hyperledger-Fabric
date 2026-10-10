@@ -148,6 +148,43 @@ router.post('/valuations/simulate', requireFabricConnection, async (req, res, ne
   } catch (err) {
     next(err);
   }
+// POST /api/assets/:assetId/valuations/:valuationId/validate — Validate Appraisal (Maker-Checker Enforced)
+router.post('/valuations/:valuationId/validate', requireFabricConnection, async (req, res, next) => {
+  const { assetId, valuationId } = req.params;
+  const { validatorIdentity, organization, role, reason, remarks } = req.body || {};
+
+  // Extract authenticated, declared, or header actor identity
+  const actorContext = {
+    validatorIdentity: validatorIdentity || req.headers['x-actor-id'] || '',
+    organization: organization || req.headers['x-actor-msp'] || 'VerifierMSP',
+    role: role || req.headers['x-actor-role'] || 'VALUATION_APPROVER',
+    reason: reason || remarks || '',
+  };
+
+  try {
+    const result = await valuationService.validateValuation({
+      assetId,
+      valuationId,
+      ...actorContext,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      txId: result.txId,
+      valuation: result.valuation,
+      idempotent: Boolean(result.idempotent),
+    });
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({
+        success: false,
+        error: err.message,
+        reasonCode: err.reasonCode || 'VALUATION_VALIDATION_ERROR',
+      });
+    }
+    next(err);
+  }
 });
 
 module.exports = router;

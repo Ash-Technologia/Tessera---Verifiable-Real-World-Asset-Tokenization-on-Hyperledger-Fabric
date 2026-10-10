@@ -330,4 +330,82 @@ describe('ValuationWorkspace page', () => {
       expect(screen.getByText('tx-approval-777')).toBeInTheDocument();
     });
   });
+
+  it('opens validation modal for submitted valuation and commits validation to ledger', async () => {
+    const submittedVal = {
+      valuationId: 'VAL-SUBMITTED-1',
+      assetId: 'REAL-ESTATE-001',
+      value: 2000000,
+      currency: 'USD',
+      method: 'INDEPENDENT_APPRAISAL',
+      valuationDate: '2026-02-01',
+      validUntil: '2027-02-01',
+      source: 'Knight Frank',
+      valuer: 'Surveyor X',
+      status: 'SUBMITTED',
+      submittedBy: 'IssuerMSP::user-submitter',
+      submittedAt: '2026-02-01T10:00:00Z',
+      remarks: 'Pending certification',
+    };
+
+    const fetchMock = vi.fn(async (url, opts) => {
+      const u = String(url);
+      if (u.includes('/validate')) {
+        return jsonResponse(200, {
+          success: true,
+          txId: 'tx-validate-999',
+          valuation: { ...submittedVal, status: 'VALID' },
+          message: 'Valuation successfully validated and committed to ledger',
+        });
+      }
+      if (u.endsWith('/valuations')) {
+        return jsonResponse(200, {
+          success: true,
+          count: 1,
+          valuations: [submittedVal],
+        });
+      }
+      if (u.endsWith('/valuation-readiness')) {
+        return jsonResponse(200, {
+          success: true,
+          readiness: { ready: false, reason: 'VALID_VALUATION_REQUIRED' },
+        });
+      }
+      if (u.endsWith('/tokenization-approvals')) {
+        return jsonResponse(200, { success: true, count: 0, approvals: [] });
+      }
+      if (u.endsWith('/tokenization-approval-status')) {
+        return jsonResponse(200, { success: true, approved: false });
+      }
+      if (u.includes('/api/assets/REAL-ESTATE-001')) {
+        return jsonResponse(200, { success: true, asset: mockAsset });
+      }
+      return jsonResponse(404, { success: false, error: 'not found' });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderWorkspace();
+
+    await waitFor(() => {
+      expect(screen.getByTitle('VAL-SUBMITTED-1')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Validate' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Validate' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Validate Appraisal: VAL-SUBMITTED-1/)).toBeInTheDocument();
+      expect(screen.getByText(/Maker-Checker Policy:/)).toBeInTheDocument();
+    });
+
+    const remarksInput = screen.getByLabelText(/Certification Remarks \/ Justification/);
+    fireEvent.change(remarksInput, { target: { value: 'Methodology verified with market comps' } });
+
+    fireEvent.click(screen.getByText('Certify & Commit VALID Status'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Valuation successfully validated and committed to ledger/)).toBeInTheDocument();
+      expect(screen.getByText('tx-validate-999')).toBeInTheDocument();
+    });
+  });
 });

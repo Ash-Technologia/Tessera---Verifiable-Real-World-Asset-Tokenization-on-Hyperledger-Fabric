@@ -33,6 +33,11 @@ export const valuationApi = {
   async simulate(assetId) {
     return apiPost(`${assetPath(assetId)}/valuations/simulate`, {});
   },
+
+  /** POST /api/assets/:assetId/valuations/:valuationId/validate → validate submitted appraisal */
+  async validate(assetId, valuationId, payload = {}) {
+    return apiPost(`${assetPath(assetId)}/valuations/${enc(valuationId)}/validate`, payload);
+  },
 };
 
 export const approvalApi = {

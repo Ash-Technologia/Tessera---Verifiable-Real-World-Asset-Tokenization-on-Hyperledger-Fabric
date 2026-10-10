@@ -118,6 +118,13 @@ export function ValuationWorkspace() {
   const [approvalError, setApprovalError] = useState(null);
   const [approvalSuccess, setApprovalSuccess] = useState(null);
 
+  // Valuation validation state (Phase 9A)
+  const [validateTarget, setValidateTarget] = useState(null);
+  const [validationRemarks, setValidationRemarks] = useState('');
+  const [validatingValuation, setValidatingValuation] = useState(false);
+  const [validationError, setValidationError] = useState(null);
+  const [validationSuccess, setValidationSuccess] = useState(null);
+
   // Calculations for overview
   const latestValuation = useMemo(() => {
     if (valuations.length === 0) return null;
@@ -265,6 +272,40 @@ export function ValuationWorkspace() {
       setApprovalError(err.message || 'Failed to record approval decision on ledger.');
     } finally {
       setSubmittingApproval(false);
+    }
+  };
+
+  const handleValidateValuation = async (e) => {
+    if (e) e.preventDefault();
+    if (!validateTarget) return;
+
+    setValidatingValuation(true);
+    setValidationError(null);
+    setValidationSuccess(null);
+
+    try {
+      const res = await valuationApi.validate(assetId, validateTarget.valuationId, {
+        validatorIdentity: identity.identityId,
+        organization: identity.msp,
+        role: identity.role || 'VALUATION_APPROVER',
+        reason: validationRemarks || 'Certified independent appraisal verified',
+      });
+
+      setValidationSuccess(res);
+      await Promise.all([
+        valuationsQuery.refetch(),
+        readinessQuery.refetch(),
+        assetQuery.refetch(),
+      ]);
+      setTimeout(() => {
+        setValidateTarget(null);
+        setValidationSuccess(null);
+        setValidationRemarks('');
+      }, 1500);
+    } catch (err) {
+      setValidationError(err.message || 'Failed to validate valuation record on ledger');
+    } finally {
+      setValidatingValuation(false);
     }
   };
 
@@ -481,11 +522,27 @@ export function ValuationWorkspace() {
                   },
                   {
                     key: 'actions',
-                    header: 'Details',
+                    header: 'Actions',
                     render: (row) => (
-                      <Button size="sm" variant="secondary" onClick={() => setInspectValuation(row)}>
-                        Inspect
-                      </Button>
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                        <Button size="sm" variant="secondary" onClick={() => setInspectValuation(row)}>
+                          Inspect
+                        </Button>
+                        {row.status === 'SUBMITTED' && (
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={() => {
+                              setValidateTarget(row);
+                              setValidationError(null);
+                              setValidationSuccess(null);
+                              setValidationRemarks('');
+                            }}
+                          >
+                            Validate
+                          </Button>
+                        )}
+                      </div>
                     ),
                   },
                 ]}
@@ -869,6 +926,97 @@ export function ValuationWorkspace() {
               { label: 'Superseded By', value: inspectValuation.supersededBy ? <span className="ts-mono">{inspectValuation.supersededBy}</span> : 'None' },
             ]}
           />
+          {inspectValuation.status === 'SUBMITTED' && (
+            <div style={{ marginTop: '1.2rem', paddingTop: '1rem', borderTop: '1px solid var(--ts-border)', display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setValidateTarget(inspectValuation);
+                  setInspectValuation(null);
+                  setValidationError(null);
+                  setValidationSuccess(null);
+                  setValidationRemarks('');
+                }}
+              >
+                Proceed to Validate Appraisal →
+              </Button>
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {/* ==================================================================== */}
+      {/* VALUATION VALIDATION MODAL (Phase 9A)                                */}
+      {/* ==================================================================== */}
+      {validateTarget && (
+        <Modal
+          title={`Validate Appraisal: ${validateTarget.valuationId}`}
+          onClose={() => setValidateTarget(null)}
+          closeLabel="Cancel"
+        >
+          <form onSubmit={handleValidateValuation}>
+            <p className="ts-body" style={{ margin: '0 0 1rem', fontSize: 'var(--ts-text-sm)' }}>
+              Certify this submitted appraisal to transition its ledger status to <strong>VALID</strong>. Only valid, non-expired appraisals satisfy tokenization prerequisites.
+            </p>
+
+            <div className="ts-notice-box" style={{ marginBottom: '1rem' }} role="status">
+              <div>
+                <strong>Maker-Checker Policy:</strong> The valuation submitter (<code>{validateTarget.submittedBy || validateTarget.valuer || 'creator'}</code>) cannot validate this record. An authorized verifier identity (<code>{identity.identityId}</code> · <code>{identity.msp}</code>) is required.
+              </div>
+            </div>
+
+            {validationError && (
+              <div style={{ padding: '0.8rem 1rem', background: 'var(--ts-danger-bg)', color: 'var(--ts-danger)', borderRadius: 'var(--ts-radius-sm)', marginBottom: '1rem', border: '1px solid var(--ts-danger)' }}>
+                <strong>Validation Error:</strong> {validationError}
+              </div>
+            )}
+
+            {validationSuccess && (
+              <div style={{ padding: '0.8rem 1rem', background: 'var(--ts-success-bg)', color: 'var(--ts-success)', borderRadius: 'var(--ts-radius-sm)', marginBottom: '1rem', border: '1px solid var(--ts-success)' }}>
+                <strong>Success:</strong> {validationSuccess.message}
+                {validationSuccess.txId && (
+                  <div style={{ marginTop: '0.4rem', fontSize: 'var(--ts-text-xs)' }}>
+                    Ledger Tx ID: <code className="ts-mono">{validationSuccess.txId}</code>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <MetaList
+              entries={[
+                { label: 'Valuation ID', value: <span className="ts-mono">{validateTarget.valuationId}</span>, mono: true },
+                { label: 'Appraised Amount', value: <AmountDisplay value={validateTarget.value} currency={validateTarget.currency} /> },
+                { label: 'Methodology', value: validateTarget.method },
+                { label: 'Valid Until', value: formatDate(validateTarget.validUntil) || validateTarget.validUntil },
+                { label: 'Current Status', value: <StatusBadge status={validateTarget.status} /> },
+                { label: 'Submitter', value: validateTarget.submittedBy || validateTarget.valuer || '—', mono: true },
+              ]}
+            />
+
+            <div style={{ marginTop: '1.2rem', marginBottom: '1.5rem' }}>
+              <label className="ts-label" htmlFor="val-validation-reason">
+                Certification Remarks / Justification
+              </label>
+              <textarea
+                id="val-validation-reason"
+                className="ts-textarea"
+                style={{ width: '100%', minHeight: '80px', padding: '0.6rem', background: 'var(--ts-surface)', color: 'var(--ts-ink)', border: '1px solid var(--ts-border)', borderRadius: 'var(--ts-radius-sm)', font: 'inherit' }}
+                placeholder="Confirmation of appraisal methodology, market comp data verification, and professional license..."
+                value={validationRemarks}
+                onChange={(e) => setValidationRemarks(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem' }}>
+              <Button type="button" variant="secondary" onClick={() => setValidateTarget(null)} disabled={validatingValuation}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={validatingValuation || Boolean(validationSuccess)}>
+                {validatingValuation ? 'Certifying on Ledger...' : 'Certify & Commit VALID Status'}
+              </Button>
+            </div>
+          </form>
         </Modal>
       )}
     </div>
