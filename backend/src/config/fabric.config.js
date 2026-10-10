@@ -25,57 +25,80 @@ const fs = require('node:fs');
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 /**
- * Returns the validated Fabric Gateway configuration object.
- * Throws a descriptive error if required configuration is missing.
+ * Returns the validated Fabric Gateway configuration object for the given MSP.
+ * Defaults to IssuerMSP (or FABRIC_MSP_ID env).
+ *
+ * @param {string} [targetMspId] - 'IssuerMSP' | 'VerifierMSP' | 'ComplianceMSP'
+ * @returns {object}
  */
-function getFabricConfig() {
-  const config = {
-    // Fabric network parameters
-    channelName:     process.env.FABRIC_CHANNEL    || 'tessera-channel',
-    chaincodeName:   process.env.FABRIC_CHAINCODE  || 'asset',
+function getFabricConfig(targetMspId) {
+  const msp = targetMspId || process.env.FABRIC_MSP_ID || 'IssuerMSP';
+  const channelName = process.env.FABRIC_CHANNEL || 'tessera-channel';
+  const chaincodeName = process.env.FABRIC_CHAINCODE || 'asset';
 
-    // Identity (MSP)
-    mspId:           process.env.FABRIC_MSP_ID     || 'IssuerMSP',
+  if (msp === 'VerifierMSP') {
+    return {
+      channelName,
+      chaincodeName,
+      mspId: 'VerifierMSP',
+      peerEndpoint: process.env.FABRIC_VERIFIER_PEER_ENDPOINT || 'localhost:9051',
+      peerHostname: process.env.FABRIC_VERIFIER_PEER_HOSTNAME || 'peer0.verifier.tessera.com',
+      peerTlsCertPath: resolvePath(process.env.FABRIC_VERIFIER_PEER_TLS_CERT || 'blockchain/organizations/peerOrganizations/verifier.tessera.com/peers/peer0.verifier.tessera.com/tls/ca.crt'),
+      identityCertPath: resolvePath(process.env.FABRIC_VERIFIER_IDENTITY_CERT || 'blockchain/organizations/peerOrganizations/verifier.tessera.com/users/Admin@verifier.tessera.com/msp/signcerts/cert.pem'),
+      identityKeyDir: resolvePath(process.env.FABRIC_VERIFIER_IDENTITY_KEY_DIR || 'blockchain/organizations/peerOrganizations/verifier.tessera.com/users/Admin@verifier.tessera.com/msp/keystore'),
+    };
+  }
 
-    // Peer gRPC connection
-    peerEndpoint:    process.env.FABRIC_PEER_ENDPOINT  || 'localhost:7051',
-    peerHostname:    process.env.FABRIC_PEER_HOSTNAME  || 'peer0.issuer.tessera.com',
+  if (msp === 'ComplianceMSP') {
+    return {
+      channelName,
+      chaincodeName,
+      mspId: 'ComplianceMSP',
+      peerEndpoint: process.env.FABRIC_COMPLIANCE_PEER_ENDPOINT || 'localhost:11051',
+      peerHostname: process.env.FABRIC_COMPLIANCE_PEER_HOSTNAME || 'peer0.compliance.tessera.com',
+      peerTlsCertPath: resolvePath(process.env.FABRIC_COMPLIANCE_PEER_TLS_CERT || 'blockchain/organizations/peerOrganizations/compliance.tessera.com/peers/peer0.compliance.tessera.com/tls/ca.crt'),
+      identityCertPath: resolvePath(process.env.FABRIC_COMPLIANCE_IDENTITY_CERT || 'blockchain/organizations/peerOrganizations/compliance.tessera.com/users/Admin@compliance.tessera.com/msp/signcerts/cert.pem'),
+      identityKeyDir: resolvePath(process.env.FABRIC_COMPLIANCE_IDENTITY_KEY_DIR || 'blockchain/organizations/peerOrganizations/compliance.tessera.com/users/Admin@compliance.tessera.com/msp/keystore'),
+    };
+  }
 
-    // Certificate paths (resolved from project root)
-    peerTlsCertPath:    resolvePath(process.env.FABRIC_PEER_TLS_CERT),
-    identityCertPath:   resolvePath(process.env.FABRIC_IDENTITY_CERT),
-    identityKeyDir:     resolvePath(process.env.FABRIC_IDENTITY_KEY_DIR),
+  return {
+    channelName,
+    chaincodeName,
+    mspId: process.env.FABRIC_MSP_ID || 'IssuerMSP',
+    peerEndpoint: process.env.FABRIC_PEER_ENDPOINT || 'localhost:7051',
+    peerHostname: process.env.FABRIC_PEER_HOSTNAME || 'peer0.issuer.tessera.com',
+    peerTlsCertPath: resolvePath(process.env.FABRIC_PEER_TLS_CERT || 'blockchain/organizations/peerOrganizations/issuer.tessera.com/peers/peer0.issuer.tessera.com/tls/ca.crt'),
+    identityCertPath: resolvePath(process.env.FABRIC_IDENTITY_CERT || 'blockchain/organizations/peerOrganizations/issuer.tessera.com/users/Admin@issuer.tessera.com/msp/signcerts/cert.pem'),
+    identityKeyDir: resolvePath(process.env.FABRIC_IDENTITY_KEY_DIR || 'blockchain/organizations/peerOrganizations/issuer.tessera.com/users/Admin@issuer.tessera.com/msp/keystore'),
   };
-
-  return config;
 }
 
 /**
  * Resolves a path relative to the project root.
- * Returns null if the env var is not set.
+ * Returns null if the envPath is not provided.
  */
 function resolvePath(envPath) {
   if (!envPath) return null;
-  // If already absolute, return as-is; otherwise resolve from project root
   return path.isAbsolute(envPath)
     ? envPath
     : path.join(PROJECT_ROOT, envPath);
 }
 
 /**
- * Validates that the Fabric config files actually exist on disk.
- * Used by the gateway service before attempting connection.
+ * Validates that the Fabric config files actually exist on disk for the given MSP.
  *
- * @returns {{ valid: boolean, missing: string[] }}
+ * @param {string} [targetMspId]
+ * @returns {{ valid: boolean, missing: string[], config: object }}
  */
-function validateFabricConfig() {
-  const config = getFabricConfig();
+function validateFabricConfig(targetMspId) {
+  const config = getFabricConfig(targetMspId);
   const missing = [];
 
   const filesToCheck = [
-    { label: 'Peer TLS cert',    path: config.peerTlsCertPath },
-    { label: 'Identity cert',    path: config.identityCertPath },
-    { label: 'Identity key dir', path: config.identityKeyDir },
+    { label: `${config.mspId} Peer TLS cert`, path: config.peerTlsCertPath },
+    { label: `${config.mspId} Identity cert`, path: config.identityCertPath },
+    { label: `${config.mspId} Identity key dir`, path: config.identityKeyDir },
   ];
 
   for (const { label, path: filePath } of filesToCheck) {

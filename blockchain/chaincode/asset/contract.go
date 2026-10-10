@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hyperledger/fabric-chaincode-go/pkg/statebased"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
 
@@ -35,6 +36,23 @@ import (
 // AssetContract implements the TESSERA asset management chaincode.
 type AssetContract struct {
 	contractapi.Contract
+}
+
+// setKeyEndorsementPolicy sets the key-level endorsement policy on a ledger state key.
+func (c *AssetContract) setKeyEndorsementPolicy(ctx contractapi.TransactionContextInterface, key string, orgs ...string) error {
+	ep, err := statebased.NewStateEP(nil)
+	if err != nil {
+		return fmt.Errorf("failed to create key endorsement policy: %w", err)
+	}
+	err = ep.AddOrgs(statebased.RoleTypePeer, orgs...)
+	if err != nil {
+		return fmt.Errorf("failed to add orgs to key endorsement policy: %w", err)
+	}
+	policyBytes, err := ep.Policy()
+	if err != nil {
+		return fmt.Errorf("failed to serialize key endorsement policy: %w", err)
+	}
+	return ctx.GetStub().SetStateValidationParameter(key, policyBytes)
 }
 
 // =============================================================================
@@ -68,6 +86,15 @@ func (c *AssetContract) CreateAsset(
 		return fmt.Errorf("owner cannot be empty")
 	}
 
+	clientID, err := ctx.GetClientIdentity().GetID()
+	if err != nil {
+		clientID = "unknown-client"
+	}
+	mspID, _ := ctx.GetClientIdentity().GetMSPID()
+	if mspID != "" && mspID != "IssuerMSP" {
+		return fmt.Errorf("unauthorized: CreateAsset requires IssuerMSP caller, got %s", mspID)
+	}
+
 	exists, err := c.AssetExists(ctx, assetID)
 	if err != nil {
 		return fmt.Errorf("failed to check asset existence for %q: %w", assetID, err)
@@ -82,12 +109,6 @@ func (c *AssetContract) CreateAsset(
 			return fmt.Errorf("invalid attributesJSON for asset %q: %w", assetID, err)
 		}
 	}
-
-	clientID, err := ctx.GetClientIdentity().GetID()
-	if err != nil {
-		clientID = "unknown-client"
-	}
-	mspID, _ := ctx.GetClientIdentity().GetMSPID()
 
 	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
 	if err != nil {
@@ -364,6 +385,11 @@ func (c *AssetContract) UpdateAssetAttributes(
 	}
 	if attributesJSON == "" {
 		return fmt.Errorf("attributesJSON cannot be empty")
+	}
+
+	callerMSP, _ := ctx.GetClientIdentity().GetMSPID()
+	if callerMSP != "" && callerMSP != "IssuerMSP" {
+		return fmt.Errorf("unauthorized: UpdateAssetAttributes requires IssuerMSP caller, got %s", callerMSP)
 	}
 
 	asset, err := c.ReadAsset(ctx, assetID)
@@ -881,6 +907,16 @@ func (c *AssetContract) CreateEvidence(
 		return fmt.Errorf("invalid sha256 hash: must be exactly 64 hex characters (got %d)", len(ev.SHA256))
 	}
 
+	// Capture submitter identity and timestamp
+	clientID, _ := ctx.GetClientIdentity().GetID()
+	mspID, _ := ctx.GetClientIdentity().GetMSPID()
+	if mspID != "" && mspID != "IssuerMSP" && mspID != "VerifierMSP" {
+		return fmt.Errorf("unauthorized: CreateEvidence requires IssuerMSP or VerifierMSP caller, got %s", mspID)
+	}
+	if ev.SubmittedBy == "" {
+		ev.SubmittedBy = fmt.Sprintf("%s::%s", mspID, clientID)
+	}
+
 	// Verify target asset exists
 	exists, err := c.AssetExists(ctx, ev.AssetID)
 	if err != nil {
@@ -898,13 +934,6 @@ func (c *AssetContract) CreateEvidence(
 	}
 	if existingBytes != nil {
 		return fmt.Errorf("evidence %q already exists: evidence records are immutable and cannot be overwritten", ev.EvidenceID)
-	}
-
-	// Capture submitter identity and timestamp
-	clientID, _ := ctx.GetClientIdentity().GetID()
-	mspID, _ := ctx.GetClientIdentity().GetMSPID()
-	if ev.SubmittedBy == "" {
-		ev.SubmittedBy = fmt.Sprintf("%s::%s", mspID, clientID)
 	}
 
 	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
@@ -1054,6 +1083,13 @@ func (c *AssetContract) CreateValuation(
 		return fmt.Errorf("validUntil is required")
 	}
 
+	// Capture submitter identity and timestamp
+	clientID, _ := ctx.GetClientIdentity().GetID()
+	mspID, _ := ctx.GetClientIdentity().GetMSPID()
+	if mspID != "" && mspID != "IssuerMSP" && mspID != "VerifierMSP" {
+		return fmt.Errorf("unauthorized: CreateValuation requires IssuerMSP or VerifierMSP caller, got %s", mspID)
+	}
+
 	// Verify target asset exists
 	exists, err := c.AssetExists(ctx, v.AssetID)
 	if err != nil {
@@ -1072,10 +1108,6 @@ func (c *AssetContract) CreateValuation(
 	if existingBytes != nil {
 		return fmt.Errorf("valuation %q already exists: valuation records are immutable and cannot be overwritten", v.ValuationID)
 	}
-
-	// Capture submitter identity and timestamp
-	clientID, _ := ctx.GetClientIdentity().GetID()
-	mspID, _ := ctx.GetClientIdentity().GetMSPID()
 
 	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
 	if err != nil {
@@ -1102,6 +1134,7 @@ func (c *AssetContract) CreateValuation(
 	if err := ctx.GetStub().PutState(valuationKey, vBytes); err != nil {
 		return fmt.Errorf("failed writing valuation %q to ledger: %w", v.ValuationID, err)
 	}
+	_ = c.setKeyEndorsementPolicy(ctx, valuationKey, "VerifierMSP")
 
 	// Create composite key index for fast retrieval by assetId
 	indexKey, err := ctx.GetStub().CreateCompositeKey("asset~valuation", []string{v.AssetID, v.ValuationID})
@@ -2063,6 +2096,12 @@ func (c *AssetContract) UpdateValuationStatus(
 		return fmt.Errorf("invalid status %q: must be one of VALID, EXPIRED, REJECTED, SUPERSEDED", newStatus)
 	}
 
+	clientID, _ := ctx.GetClientIdentity().GetID()
+	mspID, _ := ctx.GetClientIdentity().GetMSPID()
+	if newStatus == ValuationStatusValid && mspID != "" && mspID != "VerifierMSP" {
+		return fmt.Errorf("unauthorized: UpdateValuationStatus to VALID requires VerifierMSP caller, got %s", mspID)
+	}
+
 	valuationKey := "valuation_" + valuationID
 	vBytes, err := ctx.GetStub().GetState(valuationKey)
 	if err != nil {
@@ -2076,10 +2115,6 @@ func (c *AssetContract) UpdateValuationStatus(
 	if err := json.Unmarshal(vBytes, &v); err != nil {
 		return fmt.Errorf("failed to deserialize valuation %q: %w", valuationID, err)
 	}
-
-	// Record audit event before status change
-	clientID, _ := ctx.GetClientIdentity().GetID()
-	mspID, _ := ctx.GetClientIdentity().GetMSPID()
 	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
 	if err != nil {
 		return fmt.Errorf("failed to get transaction timestamp: %w", err)
@@ -2146,6 +2181,13 @@ func (c *AssetContract) CreateTokenizationApproval(
 		return fmt.Errorf("invalid decision %q: must be APPROVED or REJECTED", a.Decision)
 	}
 
+	// Capture submitter identity and timestamp
+	clientID, _ := ctx.GetClientIdentity().GetID()
+	mspID, _ := ctx.GetClientIdentity().GetMSPID()
+	if mspID != "" && mspID != "ComplianceMSP" {
+		return fmt.Errorf("unauthorized: CreateTokenizationApproval requires ComplianceMSP caller, got %s", mspID)
+	}
+
 	// Verify target asset exists
 	_, err := c.ReadAsset(ctx, a.AssetID)
 	if err != nil {
@@ -2162,10 +2204,6 @@ func (c *AssetContract) CreateTokenizationApproval(
 		return fmt.Errorf("approval %q already exists: approval records are immutable and cannot be overwritten", a.ApprovalID)
 	}
 
-	// Capture submitter identity and timestamp
-	clientID, _ := ctx.GetClientIdentity().GetID()
-	mspID, _ := ctx.GetClientIdentity().GetMSPID()
-
 	txTimestamp, err := ctx.GetStub().GetTxTimestamp()
 	if err != nil {
 		return fmt.Errorf("failed to get transaction timestamp: %w", err)
@@ -2178,9 +2216,8 @@ func (c *AssetContract) CreateTokenizationApproval(
 	}
 	if a.ApprovedByMSP == "" {
 		a.ApprovedByMSP = mspID
-	}
-	if a.ApprovedAt == "" {
-		a.ApprovedAt = now
+	} else if a.ApprovedByMSP != "ComplianceMSP" {
+		return fmt.Errorf("unauthorized: ApprovedByMSP must be ComplianceMSP, got %s", a.ApprovedByMSP)
 	}
 	a.DocType = DocTypeTokenApproval
 
@@ -2236,6 +2273,7 @@ func (c *AssetContract) CreateTokenizationApproval(
 	if err := ctx.GetStub().PutState(approvalKey, aBytes); err != nil {
 		return fmt.Errorf("failed writing approval %q to ledger: %w", a.ApprovalID, err)
 	}
+	_ = c.setKeyEndorsementPolicy(ctx, approvalKey, "ComplianceMSP")
 
 	// Create composite key index for fast retrieval by assetId
 	indexKey, err := ctx.GetStub().CreateCompositeKey("asset~approval", []string{a.AssetID, a.ApprovalID})
@@ -2374,6 +2412,12 @@ func (c *AssetContract) TokenizeAsset(
 		return fmt.Errorf("initialOwnerMSP is required")
 	}
 
+	clientID, _ := ctx.GetClientIdentity().GetID()
+	mspID, _ := ctx.GetClientIdentity().GetMSPID()
+	if mspID != "" && mspID != "IssuerMSP" {
+		return fmt.Errorf("unauthorized: TokenizeAsset requires IssuerMSP caller, got %s", mspID)
+	}
+
 	// Check if asset already tokenized
 	assetTokenKey := "asset_token_" + req.AssetID
 	existingBytes, err := ctx.GetStub().GetState(assetTokenKey)
@@ -2495,6 +2539,9 @@ func (c *AssetContract) TokenizeAsset(
 	if latestApproval == nil {
 		return fmt.Errorf("TOKENIZATION_APPROVAL_REQUIRED: no APPROVED tokenization approval found")
 	}
+	if latestApproval.ApprovedByMSP != "" && latestApproval.ApprovedByMSP != "ComplianceMSP" {
+		return fmt.Errorf("TOKENIZATION_APPROVAL_INVALID: approval must be from ComplianceMSP, got %s", latestApproval.ApprovedByMSP)
+	}
 
 	// Get verification snapshot
 	verifJSON, err := c.GetVerificationHistory(ctx, req.AssetID)
@@ -2516,9 +2563,6 @@ func (c *AssetContract) TokenizeAsset(
 	}
 
 	// All checks passed - create token
-	clientID, _ := ctx.GetClientIdentity().GetID()
-	mspID, _ := ctx.GetClientIdentity().GetMSPID()
-
 	txTimestamp, err = ctx.GetStub().GetTxTimestamp()
 	if err != nil {
 		return fmt.Errorf("failed to get transaction timestamp: %w", err)
@@ -2568,11 +2612,13 @@ func (c *AssetContract) TokenizeAsset(
 	if err := ctx.GetStub().PutState(tokenKey, tokenBytes); err != nil {
 		return fmt.Errorf("failed writing token %q to ledger: %w", req.TokenID, err)
 	}
+	_ = c.setKeyEndorsementPolicy(ctx, tokenKey, "IssuerMSP", "ComplianceMSP")
 
 	// Create asset-token binding (enforces uniqueness)
 	if err := ctx.GetStub().PutState(assetTokenKey, []byte(req.TokenID)); err != nil {
 		return fmt.Errorf("failed creating asset-token binding: %w", err)
 	}
+	_ = c.setKeyEndorsementPolicy(ctx, assetTokenKey, "IssuerMSP", "ComplianceMSP")
 
 	// Create composite key indexes
 	tokenAssetIndex, _ := ctx.GetStub().CreateCompositeKey("asset~token", []string{req.AssetID, req.TokenID})
@@ -2962,15 +3008,18 @@ func (c *AssetContract) RecordVerification(
 		return fmt.Errorf("invalid verification decision %q: must be APPROVED or REJECTED", v.Decision)
 	}
 
+	// Caller identity for record-keeping and payload population.
+	callerID, _ := ctx.GetClientIdentity().GetID()
+	callerMSP, _ := ctx.GetClientIdentity().GetMSPID()
+	if callerMSP != "" && callerMSP != "VerifierMSP" {
+		return fmt.Errorf("unauthorized: RecordVerification requires VerifierMSP caller, got %s", callerMSP)
+	}
+
 	// Read asset
 	asset, err := c.ReadAsset(ctx, v.AssetID)
 	if err != nil {
 		return fmt.Errorf("cannot verify non-existent asset %q: %w", v.AssetID, err)
 	}
-
-	// Caller identity for record-keeping and payload population.
-	callerID, _ := ctx.GetClientIdentity().GetID()
-	callerMSP, _ := ctx.GetClientIdentity().GetMSPID()
 
 	// Maker-Checker Invariant — Phase 3:
 	// The DECLARED verifier identity in the payload must not match the asset creator.

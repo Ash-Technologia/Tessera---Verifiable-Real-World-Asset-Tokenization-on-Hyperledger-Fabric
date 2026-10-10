@@ -27,11 +27,24 @@ const utf8Decoder = new TextDecoder();
  */
 class ContractService {
   /**
-   * Gets the asset chaincode contract reference from the gateway.
+   * Gets the asset chaincode contract reference from the gateway for the specified MSP.
+   * Defaults to 'IssuerMSP'.
+   *
+   * @param {string} [targetMsp] - 'IssuerMSP' | 'VerifierMSP' | 'ComplianceMSP'
    * @returns {import('@hyperledger/fabric-gateway').Contract}
    */
-  _getContract() {
-    return gatewayService.getContract('asset');
+  _getContract(targetMsp = 'IssuerMSP') {
+    return gatewayService.getContract('asset', targetMsp);
+  }
+
+  /**
+   * Returns a contract reference explicitly bound to a specific organization MSP.
+   *
+   * @param {string} targetMsp
+   * @returns {import('@hyperledger/fabric-gateway').Contract}
+   */
+  getContractForMSP(targetMsp) {
+    return gatewayService.getContract('asset', targetMsp);
   }
 
   /**
@@ -322,14 +335,15 @@ class ContractService {
    * @param {object} verification
    * @returns {Promise<{ txId: string, verification: object }>}
    */
-  async recordVerification(verification) {
+  async recordVerification(verification, options = {}) {
     logger.info('Submitting RecordVerification transaction', {
       verificationId: verification.verificationId,
       assetId: verification.assetId,
       decision: verification.decision,
     });
 
-    const contract = this._getContract();
+    const targetMsp = options.mspId || 'VerifierMSP';
+    const contract = this._getContract(targetMsp);
     const verificationJSON = JSON.stringify(verification);
 
     let result;
@@ -461,13 +475,14 @@ class ContractService {
    * @param {string} [reason]
    * @returns {Promise<{ txId: string }>}
    */
-  async updateValuationStatus(valuationId, newStatus, reason = '') {
+  async updateValuationStatus(valuationId, newStatus, reason = '', options = {}) {
     logger.info('Submitting UpdateValuationStatus transaction', {
       valuationId,
       newStatus,
     });
 
-    const contract = this._getContract();
+    const targetMsp = options.mspId || (newStatus === 'VALID' ? 'VerifierMSP' : 'IssuerMSP');
+    const contract = this._getContract(targetMsp);
 
     let result;
     try {
@@ -497,14 +512,15 @@ class ContractService {
    * @param {object} approval
    * @returns {Promise<{ txId: string, approval: object }>}
    */
-  async createTokenizationApproval(approval) {
+  async createTokenizationApproval(approval, options = {}) {
     logger.info('Submitting CreateTokenizationApproval transaction', {
       approvalId: approval.approvalId,
       assetId: approval.assetId,
       decision: approval.decision,
     });
 
-    const contract = this._getContract();
+    const targetMsp = options.mspId || 'ComplianceMSP';
+    const contract = this._getContract(targetMsp);
     const approvalJSON = JSON.stringify(approval);
 
     let result;
@@ -550,7 +566,7 @@ class ContractService {
    * @param {object} request
    * @returns {Promise<{ txId: string, token: object }>}
    */
-  async tokenizeAsset(request) {
+  async tokenizeAsset(request, options = {}) {
     logger.info('Submitting TokenizeAsset transaction', {
       tokenId: request.tokenId,
       assetId: request.assetId,
@@ -559,12 +575,22 @@ class ContractService {
       decimals: request.decimals,
     });
 
-    const contract = this._getContract();
+    const targetMsp = options.mspId || 'IssuerMSP';
+    const contract = this._getContract(targetMsp);
     const requestJSON = JSON.stringify(request);
 
     let result;
     try {
-      result = await contract.submitTransaction('TokenizeAsset', requestJSON);
+      if (options.endorsingOrganizations && Array.isArray(options.endorsingOrganizations)) {
+        const proposal = contract.newProposal('TokenizeAsset', {
+          arguments: [requestJSON],
+          endorsingOrganizations: options.endorsingOrganizations,
+        });
+        const transaction = await proposal.endorse();
+        result = await transaction.submit();
+      } else {
+        result = await contract.submitTransaction('TokenizeAsset', requestJSON);
+      }
     } catch (err) {
       this._rethrowChaincodeError(err);
     }

@@ -56,7 +56,7 @@ class ApprovalService {
       approvalId: finalApprovalId,
       assetId,
       approvedBy: approvedBy || '',
-      approvedByMSP: approvedByMSP || '',
+      approvedByMSP: approvedByMSP || 'ComplianceMSP',
       approvedAt: new Date().toISOString(),
       decision,
       reason: reason || `Tokenization ${decision.toLowerCase()}`,
