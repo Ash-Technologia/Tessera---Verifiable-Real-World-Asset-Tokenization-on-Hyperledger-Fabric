@@ -27,6 +27,7 @@
     "test:phase9d": "node ../tests/phase9d.test.js",
     "test:phase9e": "node ../tests/phase9e.test.js",
     "test:phase9f": "node ../tests/phase9f.test.js",
+    "test:phase10": "node ../tests/phase10.test.js",
     "verify:backup": "node scripts/verify-backup-integrity.js"
   },
   "dependencies": {

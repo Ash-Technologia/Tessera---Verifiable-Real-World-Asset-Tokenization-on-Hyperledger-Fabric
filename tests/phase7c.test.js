@@ -59,6 +59,8 @@ const auditRoutes = require('../backend/src/routes/audit.routes');
 const tokenQueryRoutes = require('../backend/src/routes/token.query.routes');
 const tokenRoutes = require('../backend/src/routes/token.routes');
 const transferRoutes = require('../backend/src/routes/transfer.routes');
+const { authenticate } = require('../backend/src/middleware/auth.middleware');
+
 
 // ============================================================
 // Test Framework Harness
@@ -119,6 +121,7 @@ async function main() {
   // Setup express test server
   const app = express();
   app.use(express.json());
+  app.use(authenticate);
   app.use('/api/tokens', tokenQueryRoutes);
   app.use('/api/assets/:assetId', tokenRoutes);
   app.use('/api/assets/:assetId', transferRoutes);

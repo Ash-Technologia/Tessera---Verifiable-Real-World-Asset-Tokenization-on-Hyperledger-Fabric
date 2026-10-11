@@ -109,14 +109,48 @@ class EvidenceService {
     try {
       commitResult = await contractService.createEvidence(evidenceRecord);
     } catch (commitErr) {
-      // Rollback uncommitted storage upload to prevent orphaned files
-      logger.warn('Fabric ledger commit failed for evidence; cleaning up uncommitted storage upload', {
+      // Stage 7: Ambiguous commit vs confirmed rejection handling
+      // If client experienced a timeout or network drop, the transaction might have committed on-chain.
+      let existsOnChain = false;
+      try {
+        const onChain = await contractService.getEvidence(finalEvidenceId);
+        if (onChain && onChain.evidenceId === finalEvidenceId) {
+          existsOnChain = true;
+        }
+      } catch {
+        existsOnChain = false;
+      }
+
+      if (existsOnChain) {
+        logger.warn('Ambiguous transaction failure resolved: evidence record was successfully committed on Fabric ledger; preserving stored object', {
+          evidenceId: finalEvidenceId,
+          storageReference: uploadResult.storageReference,
+        });
+        return {
+          txId: 'reconciled-commit',
+          evidence: evidenceRecord,
+        };
+      }
+
+      // Check if error is ambiguous timeout where ledger status cannot be determined
+      const isAmbiguousTimeout = /timeout|timed out|deadline|unavailable/i.test(commitErr.message);
+      if (isAmbiguousTimeout) {
+        logger.warn('Ambiguous commit timeout encountered and ledger status unconfirmed; preserving stored payload in quarantine for reconciliation rather than deleting', {
+          evidenceId: finalEvidenceId,
+          storageReference: uploadResult.storageReference,
+          error: commitErr.message,
+        });
+        throw commitErr;
+      }
+
+      // Confirmed rejection: safe to cleanup uncommitted uploaded payload
+      logger.info('Confirmed Fabric transaction rejection; rolling back uncommitted storage upload', {
         evidenceId: finalEvidenceId,
         storageReference: uploadResult.storageReference,
         error: commitErr.message,
       });
       await minioService.delete(uploadResult.storageReference).catch((delErr) => {
-        logger.error('Failed to cleanup uncommitted storage payload after Fabric commit failure', {
+        logger.error('Failed to cleanup uncommitted storage payload after confirmed rejection', {
           storageReference: uploadResult.storageReference,
           error: delErr.message,
         });
