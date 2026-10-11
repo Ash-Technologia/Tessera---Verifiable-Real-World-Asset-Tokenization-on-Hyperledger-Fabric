@@ -151,12 +151,10 @@ describe('Dashboard component', () => {
     await waitFor(() => {
       expect(screen.getByText('Lifecycle Status Distribution')).toBeInTheDocument();
       expect(screen.getByText('Asset Type Distribution')).toBeInTheDocument();
+      expect(screen.getAllByText('REGISTERED').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('TOKENIZED').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('PLEDGED').length).toBeGreaterThan(0);
     });
-
-    // Shows accurate distribution counts
-    expect(screen.getAllByText('REGISTERED').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('TOKENIZED').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('PLEDGED').length).toBeGreaterThan(0);
   });
 
   it('shows Fabric and backend connectivity accurately', async () => {

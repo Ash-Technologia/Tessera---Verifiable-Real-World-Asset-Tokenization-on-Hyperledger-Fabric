@@ -71,6 +71,10 @@ function canonicalizePassport(passport) {
     copy.integrity = integrityWithoutHash;
   }
 
+  // Exclude signatures from canonical document body to prevent circular dependency
+  // and permit independent multi-party attestations without invalidating existing signatures
+  delete copy.signatures;
+
   // Exclude volatile generation metadata so identical authoritative state
   // always yields an identical fingerprint regardless of generation time
   delete copy.generatedAt;

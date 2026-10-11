@@ -356,6 +356,7 @@ class PassportBuilder {
       ownership: ownershipSection,
       restrictions: restrictionsSection,
       provenance: provenanceSection,
+      signatures: [],
       integrity: {
         algorithm: DEFAULT_HASH_ALGORITHM,
         passportHash: null, // Populated next

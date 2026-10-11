@@ -313,7 +313,7 @@ describe('PassportWorkspace (Phase 8G)', () => {
     await waitFor(() => {
       expect(screen.getByText(/Cryptographic Ground Truth & Verification Guarantees/i)).toBeInTheDocument();
       expect(screen.getByText(/What Passport Verification Proves/i)).toBeInTheDocument();
-      expect(screen.getByText(/compute composite Merkle inclusion trees or multi-organization digital signatures/i)).toBeInTheDocument();
+      expect(screen.getByText(/ECDSA-SHA256 digital signatures/i)).toBeInTheDocument();
     });
 
     // Verify there are no fabricated claims

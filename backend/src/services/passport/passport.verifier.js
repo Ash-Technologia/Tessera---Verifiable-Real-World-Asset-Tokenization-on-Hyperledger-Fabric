@@ -16,6 +16,7 @@
 
 const { computePassportHash } = require('./passport.hasher');
 const passportBuilder = require('./passport.builder');
+const passportSigVerifier = require('./passport.sigverifier');
 const {
   PASSPORT_VERSION,
   DEFAULT_HASH_ALGORITHM,
@@ -293,8 +294,59 @@ class PassportVerifier {
       }
     }
 
+    // 4. Digital Signatures & Trust Policy Verification — Phase 9E
+    let sigReport = {
+      signaturesValid: true,
+      signaturesTrusted: true,
+      signaturesCount: 0,
+      requiredAttestationsPresent: true,
+      missingPurposes: [],
+      duplicateOrganizations: [],
+      signatures: [],
+    };
+
+    if (options.checkSignatures !== false) {
+      sigReport = passportSigVerifier.verifyPassportSignatures(passport, options);
+
+      if (sigReport.signaturesCount > 0) {
+        checks.push({
+          check: PASSPORT_CHECK_TYPES.DIGITAL_SIGNATURES,
+          passed: sigReport.signaturesValid,
+          message: sigReport.signaturesValid
+            ? `All ${sigReport.signaturesCount} digital signature(s) cryptographically valid`
+            : 'One or more digital signatures failed cryptographic verification',
+        });
+
+        checks.push({
+          check: PASSPORT_CHECK_TYPES.SIGNER_TRUST,
+          passed: sigReport.signaturesTrusted,
+          message: sigReport.signaturesTrusted
+            ? 'All signing identities verified and trusted against Root CAs'
+            : 'One or more signing identities are untrusted, expired, revoked, or unauthorized',
+        });
+
+        checks.push({
+          check: PASSPORT_CHECK_TYPES.REQUIRED_ATTESTATIONS,
+          passed: sigReport.requiredAttestationsPresent,
+          message: sigReport.requiredAttestationsPresent
+            ? 'Required organizational attestations are complete for current lifecycle state'
+            : `Missing required attestation(s): ${sigReport.missingPurposes.join(', ') || 'duplicate organizations detected'}`,
+        });
+      } else if (options.requireSignatures === true) {
+        checks.push({
+          check: PASSPORT_CHECK_TYPES.REQUIRED_ATTESTATIONS,
+          passed: false,
+          message: 'Passport has no digital signatures attached (signatures required)',
+        });
+      }
+    }
+
     // 5. Final Synthesis
-    const valid = hashValid && assetBindingValid && fabricStateConsistent;
+    const signaturesOk = sigReport.signaturesCount > 0
+      ? (sigReport.signaturesValid && sigReport.signaturesTrusted && (options.requireCompleteAttestation ? sigReport.requiredAttestationsPresent : true))
+      : (!options.requireSignatures);
+
+    const valid = hashValid && assetBindingValid && fabricStateConsistent && signaturesOk;
 
     return {
       valid,
@@ -303,6 +355,13 @@ class PassportVerifier {
       fabricStateConsistent,
       stale,
       tampered,
+      signaturesValid: sigReport.signaturesValid,
+      signaturesTrusted: sigReport.signaturesTrusted,
+      signaturesCount: sigReport.signaturesCount,
+      requiredAttestationsPresent: sigReport.requiredAttestationsPresent,
+      missingAttestations: sigReport.missingPurposes,
+      duplicateOrganizations: sigReport.duplicateOrganizations,
+      signatures: sigReport.signatures,
       passportId,
       assetId: asset.assetId,
       verifiedAt,
