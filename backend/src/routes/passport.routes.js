@@ -105,6 +105,14 @@ router.post('/sign', authenticate, requireAuth, requireFabricConnection, async (
       user: req.user,
     });
 
+    logger.info('Passport cryptographic attestation recorded', {
+      assetId,
+      signatureId: result.signature?.signatureId,
+      mspId: result.signature?.signer?.mspId,
+      purpose: result.signature?.purpose,
+      user: req.user.userId,
+    });
+
     return res.json({
       success: true,
       signature: result.signature,
@@ -112,6 +120,12 @@ router.post('/sign', authenticate, requireAuth, requireFabricConnection, async (
       integrity: result.integrity,
     });
   } catch (err) {
+    logger.warn('Passport signing rejected or failed', {
+      assetId,
+      user: req.user?.userId,
+      error: err.message,
+      statusCode: err.statusCode || 500,
+    });
     if (err.statusCode === 403) {
       return res.status(403).json({
         success: false,
@@ -168,6 +182,14 @@ router.post('/verify', requireFabricConnection, async (req, res, next) => {
       checkSignatures: checkSignatures !== false,
       requireSignatures: requireSignatures === true,
       requireCompleteAttestation: requireCompleteAttestation === true,
+    });
+
+    logger.info('Passport verification completed', {
+      assetId,
+      overallValid: verificationResult.overallValid,
+      digestValid: verificationResult.integrity?.hashValid,
+      fabricConsistent: verificationResult.fabricState?.ledgerConsistent,
+      signaturesValid: verificationResult.signatures?.signaturesValid,
     });
 
     return res.json({

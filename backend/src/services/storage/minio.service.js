@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * TESSERA MinIO / S3 Evidence Storage Service — Phase 3
+ * TESSERA MinIO / S3 Evidence Storage Service — Hardened for Phase 9F
  *
  * Responsibilities:
  *   1. Off-chain document storage for real-world asset evidence
@@ -9,15 +9,12 @@
  *   3. Namespaced, deterministic storage paths (prevents path traversal)
  *   4. Integrity verification: recalculates SHA-256 of stored bytes and
  *      compares against the Fabric on-chain commitment
- *   5. Connects via MinIO/S3 API with durable storage engine
+ *   5. Explicit driver configuration: S3 / MinIO vs local persistent filesystem
+ *   6. Fail-closed in production: no silent fallback to local disk when S3 is required
+ *   7. Storage health & readiness probe support
  *
  * Storage key convention:
  *   assets/{assetId}/evidence/{evidenceId}/v{version}/{fileName}
- *
- * Security:
- *   - No arbitrary path traversal (rejects '..' or absolute paths)
- *   - File hashes are ALWAYS calculated from actual uploaded file bytes
- *   - Verifiable off-chain storage without storing large blobs in Fabric ledger
  */
 
 const crypto = require('node:crypto');
@@ -38,16 +35,37 @@ class MinioService {
     this._dataDir = path.resolve(__dirname, '../../../../data/minio', this.bucketName);
     this._minioClient = null;
     this._useS3Client = false;
+    this._driver = 'unknown';
   }
 
   /**
-   * Initializes the storage service. Ensures the bucket / storage root exists.
+   * Initializes the storage service.
+   * Enforces fail-closed rules: in production or when STORAGE_DRIVER=s3,
+   * failure to reach the object storage daemon throws instead of silently falling back.
    */
   async init() {
     if (this._initialized) return;
 
-    // Ensure local durable directory exists
-    fs.mkdirSync(this._dataDir, { recursive: true });
+    const configuredDriver = (process.env.STORAGE_DRIVER || '').toLowerCase();
+    const isProduction = process.env.NODE_ENV === 'production';
+    const requiresS3 = configuredDriver === 's3' || configuredDriver === 'minio';
+
+    if (configuredDriver === 'local' || configuredDriver === 'filesystem') {
+      if (isProduction && process.env.ALLOW_LOCAL_STORAGE_IN_PRODUCTION !== 'true') {
+        const err = new Error('CRITICAL: Local filesystem storage is disallowed in production mode without explicit ALLOW_LOCAL_STORAGE_IN_PRODUCTION=true.');
+        logger.error(err.message);
+        throw err;
+      }
+      fs.mkdirSync(this._dataDir, { recursive: true });
+      this._useS3Client = false;
+      this._driver = 'local-filesystem';
+      this._initialized = true;
+      logger.info('Evidence storage initialized with local filesystem backend', {
+        directory: this._dataDir,
+        bucket: this.bucketName,
+      });
+      return;
+    }
 
     // Try connecting via MinIO SDK
     try {
@@ -60,24 +78,46 @@ class MinioService {
         secretKey: this.secretKey,
       });
 
-      const exists = await this._minioClient.bucketExists(this.bucketName).catch(() => false);
+      // Probe MinIO daemon connectivity
+      let exists = false;
+      try {
+        exists = await this._minioClient.bucketExists(this.bucketName);
+      } catch (bucketErr) {
+        if (bucketErr.code === 'NoSuchBucket') {
+          exists = false;
+        } else {
+          // Network connection error / daemon offline
+          throw bucketErr;
+        }
+      }
+
       if (!exists) {
-        await this._minioClient.makeBucket(this.bucketName, 'us-east-1').catch((err) => {
-          logger.warn(`MinIO makeBucket notice: ${err.message}`);
-        });
+        await this._minioClient.makeBucket(this.bucketName, 'us-east-1');
       }
       this._useS3Client = true;
+      this._driver = 's3';
       logger.info('MinIO storage service connected to MinIO daemon', {
         endpoint: `${this.endpoint}:${this.port}`,
         bucket: this.bucketName,
       });
     } catch (err) {
-      // S3 daemon not reachable or offline; persistent storage directory active
-      logger.info('MinIO storage initialized with persistent local storage backend', {
+      if (requiresS3 || (isProduction && process.env.ALLOW_LOCAL_STORAGE_IN_PRODUCTION !== 'true')) {
+        logger.error('CRITICAL: S3/MinIO object storage unreachable and silent local fallback is disabled in production', {
+          error: err.message,
+          endpoint: `${this.endpoint}:${this.port}`,
+        });
+        this._initialized = false;
+        throw new Error(`CRITICAL: Object storage service unavailable: ${err.message}. Fail-closed active.`);
+      }
+
+      // Permitted development fallback
+      fs.mkdirSync(this._dataDir, { recursive: true });
+      this._useS3Client = false;
+      this._driver = 'local-filesystem';
+      logger.warn('MinIO daemon offline; development falling back to local persistent filesystem storage', {
         directory: this._dataDir,
         bucket: this.bucketName,
       });
-      this._useS3Client = false;
     }
 
     this._initialized = true;
@@ -85,7 +125,6 @@ class MinioService {
 
   /**
    * Calculates the SHA-256 hash of raw file bytes.
-   * Enforces: The hash must be calculated from the actual uploaded file bytes.
    *
    * @param {Buffer} buffer
    * @returns {string} 64-character lowercase hex SHA-256 hash
@@ -111,7 +150,7 @@ class MinioService {
   }
 
   /**
-   * Uploads an evidence file to MinIO / S3 storage.
+   * Uploads an evidence file to storage.
    *
    * @param {object} params
    * @param {string} params.assetId
@@ -138,11 +177,7 @@ class MinioService {
     // 2. Build deterministic, namespaced storage key
     const storageReference = this.buildStorageReference(assetId, evidenceId, version, fileName);
 
-    // 3. Persist bytes to storage
-    const localFilePath = path.join(this._dataDir, storageReference);
-    fs.mkdirSync(path.dirname(localFilePath), { recursive: true });
-    fs.writeFileSync(localFilePath, buffer);
-
+    // 3. Persist bytes according to active driver
     if (this._useS3Client && this._minioClient) {
       try {
         await this._minioClient.putObject(this.bucketName, storageReference, buffer, buffer.length, {
@@ -152,8 +187,18 @@ class MinioService {
           'x-amz-meta-evidence-id': evidenceId,
         });
       } catch (err) {
-        logger.warn(`MinIO S3 upload notice: ${err.message}; persistent local copy preserved`);
+        logger.error('S3 object storage upload failed', {
+          error: err.message,
+          storageReference,
+          bucket: this.bucketName,
+        });
+        throw new Error(`Evidence upload to object storage failed: ${err.message}`);
       }
+    } else {
+      // Local persistent filesystem
+      const localFilePath = path.join(this._dataDir, storageReference);
+      fs.mkdirSync(path.dirname(localFilePath), { recursive: true });
+      fs.writeFileSync(localFilePath, buffer);
     }
 
     logger.info('Evidence file stored successfully', {
@@ -161,6 +206,7 @@ class MinioService {
       sha256,
       sizeBytes: buffer.length,
       mimeType,
+      driver: this._driver,
     });
 
     return {
@@ -180,22 +226,25 @@ class MinioService {
    */
   async download(storageReference) {
     await this.init();
-
     this._assertValidStorageReference(storageReference);
+
+    if (this._useS3Client && this._minioClient) {
+      try {
+        const dataStream = await this._minioClient.getObject(this.bucketName, storageReference);
+        return await new Promise((resolve, reject) => {
+          const chunks = [];
+          dataStream.on('data', (chunk) => chunks.push(chunk));
+          dataStream.on('end', () => resolve(Buffer.concat(chunks)));
+          dataStream.on('error', reject);
+        });
+      } catch (err) {
+        throw new Error(`Evidence document not found in object storage (${storageReference}): ${err.message}`);
+      }
+    }
 
     const localFilePath = path.join(this._dataDir, storageReference);
     if (fs.existsSync(localFilePath)) {
       return fs.readFileSync(localFilePath);
-    }
-
-    if (this._useS3Client && this._minioClient) {
-      const dataStream = await this._minioClient.getObject(this.bucketName, storageReference);
-      return new Promise((resolve, reject) => {
-        const chunks = [];
-        dataStream.on('data', (chunk) => chunks.push(chunk));
-        dataStream.on('end', () => resolve(Buffer.concat(chunks)));
-        dataStream.on('error', reject);
-      });
     }
 
     throw new Error(`Evidence document not found: ${storageReference}`);
@@ -211,14 +260,14 @@ class MinioService {
     await this.init();
     try {
       this._assertValidStorageReference(storageReference);
-      const localFilePath = path.join(this._dataDir, storageReference);
-      if (fs.existsSync(localFilePath)) return true;
 
       if (this._useS3Client && this._minioClient) {
         await this._minioClient.statObject(this.bucketName, storageReference);
         return true;
       }
-      return false;
+
+      const localFilePath = path.join(this._dataDir, storageReference);
+      return fs.existsSync(localFilePath);
     } catch {
       return false;
     }
@@ -231,30 +280,35 @@ class MinioService {
     await this.init();
     this._assertValidStorageReference(storageReference);
 
+    if (this._useS3Client && this._minioClient) {
+      await this._minioClient.removeObject(this.bucketName, storageReference).catch(() => {});
+    }
+
     const localFilePath = path.join(this._dataDir, storageReference);
     if (fs.existsSync(localFilePath)) {
       fs.unlinkSync(localFilePath);
     }
-
-    if (this._useS3Client && this._minioClient) {
-      await this._minioClient.removeObject(this.bucketName, storageReference).catch(() => {});
-    }
   }
 
   /**
-   * Verifies the cryptographic integrity of a stored evidence file by:
-   *   1. Retrieving the actual stored file bytes
-   *   2. Recalculating its SHA-256 hash
-   *   3. Comparing against the expected on-chain Fabric commitment
+   * Verifies the cryptographic integrity of a stored evidence file.
    *
    * @param {string} storageReference
    * @param {string} expectedSHA256
    * @returns {Promise<{ valid: boolean, status: string, calculatedSHA256: string, expectedSHA256: string, sizeBytes: number }>}
    */
   async verifyIntegrity(storageReference, expectedSHA256) {
-    const bytes = await this.download(storageReference);
-    const calculatedSHA256 = this.calculateSHA256(bytes);
+    let bytes;
+    try {
+      bytes = await this.download(storageReference);
+    } catch (err) {
+      const error = new Error(`Storage error during evidence integrity verification: ${err.message}`);
+      error.statusCode = 503;
+      error.storageReference = storageReference;
+      throw error;
+    }
 
+    const calculatedSHA256 = this.calculateSHA256(bytes);
     const match = calculatedSHA256.toLowerCase() === String(expectedSHA256).toLowerCase();
 
     return {
@@ -264,6 +318,47 @@ class MinioService {
       expectedSHA256,
       sizeBytes: bytes.length,
     };
+  }
+
+  /**
+   * Probes storage health and readiness for diagnostic reporting.
+   *
+   * @returns {Promise<{ status: string, driver: string, bucket: string, endpoint?: string, directory?: string, healthy: boolean }>}
+   */
+  async checkHealth() {
+    try {
+      if (!this._initialized) {
+        await this.init();
+      }
+
+      if (this._useS3Client && this._minioClient) {
+        const exists = await this._minioClient.bucketExists(this.bucketName).catch(() => false);
+        return {
+          status: exists ? 'HEALTHY' : 'DEGRADED',
+          healthy: exists,
+          driver: 's3',
+          bucket: this.bucketName,
+          endpoint: `${this.endpoint}:${this.port}`,
+        };
+      }
+
+      // Check local directory access
+      fs.accessSync(this._dataDir, fs.constants.R_OK | fs.constants.W_OK);
+      return {
+        status: 'HEALTHY',
+        healthy: true,
+        driver: 'local-filesystem',
+        bucket: this.bucketName,
+        directory: this._dataDir,
+      };
+    } catch (err) {
+      return {
+        status: 'UNAVAILABLE',
+        healthy: false,
+        driver: this._driver,
+        error: err.message,
+      };
+    }
   }
 
   /**

@@ -28,6 +28,7 @@ const passportRoutes = require('./routes/passport.routes');
 const gatewayService = require('./services/fabric/gateway.service');
 const templateService = require('./services/templates/template.service');
 const minioService = require('./services/storage/minio.service');
+const { assertValidConfig } = require('./config/env.validator');
 
 // ============================================================
 // App configuration
@@ -171,6 +172,17 @@ app.use(errorHandler);
 // Startup
 // ============================================================
 async function start() {
+  // Validate environment and configuration
+  try {
+    const configStatus = assertValidConfig();
+    if (configStatus.warnings.length > 0) {
+      configStatus.warnings.forEach(w => logger.warn(`[CONFIG WARNING] ${w}`));
+    }
+  } catch (err) {
+    logger.error('FATAL: Startup configuration validation failed', { error: err.message });
+    process.exit(1);
+  }
+
   // Initialize Template Service (loads all templates from /templates/*.json)
   // Must run before any route handles a template-validated request
   try {

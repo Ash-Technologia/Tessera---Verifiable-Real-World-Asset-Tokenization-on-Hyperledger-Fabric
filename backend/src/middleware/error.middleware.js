@@ -26,6 +26,18 @@ function notFoundHandler(req, res) {
 }
 
 /**
+ * Sanitizes client error messages in production.
+ */
+function sanitizeClientErrorMessage(msg) {
+  if (process.env.NODE_ENV !== 'production' || typeof msg !== 'string') {
+    return msg;
+  }
+  // Strip internal filesystem paths from client error messages
+  let sanitized = msg.replace(/(?:[a-zA-Z]:\\[^\s:"]+|\/(?:etc|home|var|usr|blockchain|data|mnt)\/[^\s:"]+)/g, '[INTERNAL_PATH]');
+  return sanitized;
+}
+
+/**
  * Global error handler — must be registered last with 4 parameters.
  */
 // eslint-disable-next-line no-unused-vars
@@ -42,9 +54,13 @@ function errorHandler(err, req, res, next) {
   });
 
   // Client response — sanitize internal details
+  const clientErrorMessage = statusCode < 500
+    ? sanitizeClientErrorMessage(err.message)
+    : 'Internal Server Error';
+
   const response = {
     success: false,
-    error: statusCode < 500 ? err.message : 'Internal Server Error',
+    error: clientErrorMessage,
     timestamp: new Date().toISOString(),
   };
 
@@ -56,4 +72,5 @@ function errorHandler(err, req, res, next) {
   res.status(statusCode).json(response);
 }
 
-module.exports = { notFoundHandler, errorHandler };
+module.exports = { notFoundHandler, errorHandler, sanitizeClientErrorMessage };
+

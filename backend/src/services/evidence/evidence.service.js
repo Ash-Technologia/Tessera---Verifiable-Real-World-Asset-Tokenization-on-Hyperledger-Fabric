@@ -105,7 +105,24 @@ class EvidenceService {
     };
 
     // 5. Commit evidence metadata + SHA-256 commitment to Fabric
-    const commitResult = await contractService.createEvidence(evidenceRecord);
+    let commitResult;
+    try {
+      commitResult = await contractService.createEvidence(evidenceRecord);
+    } catch (commitErr) {
+      // Rollback uncommitted storage upload to prevent orphaned files
+      logger.warn('Fabric ledger commit failed for evidence; cleaning up uncommitted storage upload', {
+        evidenceId: finalEvidenceId,
+        storageReference: uploadResult.storageReference,
+        error: commitErr.message,
+      });
+      await minioService.delete(uploadResult.storageReference).catch((delErr) => {
+        logger.error('Failed to cleanup uncommitted storage payload after Fabric commit failure', {
+          storageReference: uploadResult.storageReference,
+          error: delErr.message,
+        });
+      });
+      throw commitErr;
+    }
 
     logger.info('Evidence submitted and committed', {
       evidenceId: finalEvidenceId,

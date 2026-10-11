@@ -296,6 +296,15 @@ class PassportSignatureVerifier {
       valid = false;
     }
 
+    let historicalTrustStatus = 'CURRENTLY_VALID';
+    if (!caTrusted) {
+      historicalTrustStatus = 'UNTRUSTED_CA';
+    } else if (revoked) {
+      historicalTrustStatus = 'REVOKED_CURRENTLY';
+    } else if (expired) {
+      historicalTrustStatus = 'EXPIRED';
+    }
+
     return {
       signatureId,
       purpose,
@@ -310,6 +319,9 @@ class PassportSignatureVerifier {
       revoked,
       caTrusted,
       purposeAuthorized,
+      historicalTrustStatus,
+      attestationType: 'ORGANIZATIONAL_SERVICE_ATTESTATION',
+      nonRepudiationLevel: 'ORGANIZATIONAL_IDENTITY_ENDORSEMENT',
       checks,
     };
   }
