@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <defs>
+    <linearGradient id="vehicleBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2684E8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1B72D3;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="vehicleGlass" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#EAF3FF;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#BCD8FC;stop-opacity:0.7" />
+    </linearGradient>
+  </defs>
+  <!-- Ground shadow -->
+  <ellipse cx="200" cy="185" rx="120" ry="8" fill="#0D1B32" opacity="0.15"/>
+  
+  <!-- Vehicle body -->
+  <path d="M60,120 L60,150 Q60,165 75,165 L325,165 Q340,165 340,150 L340,120 Q340,90 310,75 L260,75 L240,55 Q235,50 225,50 L175,50 Q165,50 160,55 L140,75 L90,75 Q60,90 60,120 Z" fill="url(#vehicleBody)" stroke="#142B4A" stroke-width="2"/>
+  
+  <!-- Roof and windows -->
+  <path d="M140,75 L90,75 Q80,75 75,82 L75,120 L160,120 L160,55 Q165,50 175,50 L225,50 Q235,50 240,55 L240,120 L325,120 Q320,110 310,100 L260,100 L240,82 Q235,75 225,75 L175,75 Q165,75 160,82 L160,55 L140,75 Z" fill="url(#vehicleGlass)" stroke="#142B4A" stroke-width="1.5" opacity="0.85"/>
+  
+  <!-- Window dividers -->
+  <line x1="160" y1="55" x2="160" y2="120" stroke="#142B4A" stroke-width="1.5" opacity="0.6"/>
+  <line x1="240" y1="55" x2="240" y2="120" stroke="#142B4A" stroke-width="1.5" opacity="0.6"/>
+  
+  <!-- Wheels -->
+  <g>
+    <!-- Front wheel -->
+    <circle cx="115" cy="165" r="25" fill="#0D1B32"/>
+    <circle cx="115" cy="165" r="18" fill="#1E3E6B"/>
+    <circle cx="115" cy="165" r="10" fill="#2684E8" opacity="0.3"/>
+    <!-- Rear wheel -->
+    <circle cx="285" cy="165" r="25" fill="#0D1B32"/>
+    <circle cx="285" cy="165" r="18" fill="#1E3E6B"/>
+    <circle cx="285" cy="165" r="10" fill="#2684E8" opacity="0.3"/>
+  </g>
+  
+  <!-- Headlights -->
+  <ellipse cx="340" cy="125" rx="8" ry="12" fill="#FFF5E6" opacity="0.9" filter="url(#glow)"/>
+  <ellipse cx="60" cy="125" rx="8" ry="12" fill="#FFE0B2" opacity="0.6"/>
+  
+  <!-- Door handles -->
+  <rect x="170" y="115" width="20" height="4" rx="2" fill="#142B4A" opacity="0.7"/>
+  <rect x="210" y="115" width="20" height="4" rx="2" fill="#142B4A" opacity="0.7"/>
+  
+  <!-- TESSERA branding -->
+  <text x="200" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#FFFFFF" opacity="0.15">TESSERA</text>
+</svg>

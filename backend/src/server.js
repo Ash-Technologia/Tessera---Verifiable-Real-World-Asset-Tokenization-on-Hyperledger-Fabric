@@ -196,8 +196,8 @@ async function start() {
     logger.info(`TESSERA backend started`, {
       port: PORT,
       environment: NODE_ENV,
-      version: '2.0.0',
-      phase: 'Phase 2 — Asset Template Engine',
+      version: '5.0.0',
+      phase: 'Phase 5 — Ownership, Balances & Controlled Transfers',
     });
     logger.info('Ready. Attempting Fabric Gateway connection...');
   });

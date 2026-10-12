@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "templateId": "equipment",
+  "version": "1.0",
+  "name": "Equipment & Machinery",
+  "description": "Configuration template for industrial plant, heavy equipment, and machinery assets",
+  "assetType": "equipment",
+  "status": "ACTIVE",
+  "fields": [
+    {
+      "name": "serialNumber",
+      "label": "Manufacturer Serial Number",
+      "type": "string",
+      "required": true,
+      "minLength": 3,
+      "maxLength": 50,
+      "description": "OEM serial number or manufacturer identification number"
+    },
+    {
+      "name": "equipmentName",
+      "label": "Equipment Name / Model",
+      "type": "string",
+      "required": true,
+      "minLength": 2,
+      "maxLength": 100,
+      "description": "Equipment designation (e.g., CAT 320D Excavator, Volvo FH16)"
+    },
+    {
+      "name": "manufacturer",
+      "label": "Manufacturer",
+      "type": "string",
+      "required": true,
+      "minLength": 2,
+      "maxLength": 50,
+      "description": "Original equipment manufacturer (e.g., Caterpillar, Volvo, Komatsu)"
+    },
+    {
+      "name": "year",
+      "label": "Year of Manufacture",
+      "type": "integer",
+      "required": true,
+      "min": 1950,
+      "max": 2100,
+      "description": "Year the equipment was manufactured"
+    },
+    {
+      "name": "operatingHours",
+      "label": "Operating Hours",
+      "type": "number",
+      "required": false,
+      "min": 0,
+      "description": "Total operating hours on hour meter"
+    },
+    {
+      "name": "fuelType",
+      "label": "Fuel Type",
+      "type": "string",
+      "required": false,
+      "enum": ["DIESEL", "ELECTRIC", "HYBRID", "CNG", "LNG"],
+      "description": "Primary fuel or power source"
+    },
+    {
+      "name": "weightKg",
+      "label": "Operating Weight (kg)",
+      "type": "number",
+      "required": false,
+      "min": 1,
+      "description": "Operating weight in kilograms"
+    },
+    {
+      "name": "condition",
+      "label": "Condition Assessment",
+      "type": "string",
+      "required": false,
+      "enum": ["NEW", "EXCELLENT", "GOOD", "FAIR", "POOR", "SALVAGE"],
+      "description": "Overall physical and operational condition"
+    }
+  ],
+  "canonicalIdentityFields": [
+    "serialNumber",
+    "manufacturer",
+    "equipmentName"
+  ],
+  "requiredEvidence": [
+    "PURCHASE_INVOICE",
+    "OEM_WARRANTY",
+    "MAINTENANCE_LOG",
+    "INSPECTION_CERTIFICATE"
+  ],
+  "evidenceRequirements": [
+    {
+      "type": "PURCHASE_INVOICE",
+      "name": "Commercial Purchase Invoice",
+      "required": true,
+      "description": "Original commercial invoice or bill of sale from authorized dealer"
+    },
+    {
+      "type": "OEM_WARRANTY",
+      "name": "OEM Warranty Certificate",
+      "required": true,
+      "description": "Manufacturer warranty documentation with coverage terms"
+    },
+    {
+      "type": "MAINTENANCE_LOG",
+      "name": "Complete Maintenance & Service Log",
+      "required": true,
+      "description": "Chronological record of all scheduled and unscheduled maintenance"
+    },
+    {
+      "type": "INSPECTION_CERTIFICATE",
+      "name": "Third-Party Inspection Certificate",
+      "required": true,
+      "description": "Independent condition assessment by certified inspector"
+    }
+  ],
+  "lifecycle": {
+    "initialState": "DRAFT",
+    "supportedStates": [
+      "DRAFT",
+      "REGISTERED",
+      "UNDER_VERIFICATION",
+      "VERIFIED",
+      "REJECTED"
+    ],
+    "allowedTransitions": {
+      "DRAFT": ["REGISTERED"],
+      "REGISTERED": ["UNDER_VERIFICATION"],
+      "UNDER_VERIFICATION": ["VERIFIED", "REJECTED"],
+      "VERIFIED": [],
+      "REJECTED": []
+    }
+  },
+  "valuation": {
+    "supportedMethods": [
+      "STRAIGHT_LINE_RESIDUAL",
+      "CERTIFIED_APPRAISAL",
+      "MARKET_COMPARABLE"
+    ],
+    "defaultCurrency": "USD"
+  },
+  "tokenization": {
+    "wholeTokensAllowed": true,
+    "fractionalAllowed": true,
+    "minimumUnit": 1
+  }
+}

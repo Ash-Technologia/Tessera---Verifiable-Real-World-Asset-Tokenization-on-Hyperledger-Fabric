@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <defs>
+    <linearGradient id="metalGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#94A3B8;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#64748B;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#475569;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E293B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#7866E8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5B4BE0;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hydraulicGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8A23A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B8860B;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="lightGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FFF5E6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E8A23A;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Ground shadow -->
+  <ellipse cx="200" cy="185" rx="140" ry="10" fill="#0D1B32" opacity="0.2"/>
+  
+  <!-- Excavator body (main frame) -->
+  <path d="M80,140 L80,165 Q80,175 90,175 L310,175 Q320,175 320,165 L320,140 Q320,120 300,110 L260,110 L240,85 Q235,80 225,80 L175,80 Q165,80 160,85 L140,110 L100,110 Q80,120 80,140 Z" fill="url(#metalGradient)" stroke="#1E293B" stroke-width="2"/>
+  
+  <!-- Cab -->
+  <path d="M120,110 L120,85 Q120,75 130,75 L210,75 Q220,75 220,85 L220,110 Q220,105 210,105 L130,105 Q120,105 120,110 Z" fill="#1E293B" stroke="#7866E8" stroke-width="1.5"/>
+  
+  <!-- Cab windows -->
+  <path d="M125,105 L125,80 Q125,77 130,77 L215,77 Q217,77 217,80 L217,105 Q217,107 215,107 L130,107 Q127,107 125,105 Z" fill="url(#vehicleGlass)" opacity="0.85"/>
+  <defs>
+    <linearGradient id="vehicleGlass" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#EAF3FF;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#BCD8FC;stop-opacity:0.7" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Window pillars -->
+  <line x1="155" y1="77" x2="155" y2="107" stroke="#1E293B" stroke-width="2"/>
+  <line x1="185" y1="77" x2="185" y2="107" stroke="#1E293B" stroke-width="2"/>
+  
+  <!-- Boom (main arm) -->
+  <g transform="translate(220, 110)">
+    <!-- Boom base -->
+    <rect x="-15" y="-5" width="30" height="15" rx="3" fill="url(#metalGradient)" stroke="#1E293B" stroke-width="2"/>
+    
+    <!-- Boom arm segments -->
+    <path d="M0,2 L0,-60 Q15,-70 20,-80 L50,-80 Q55,-70 50,-60 L50,2 Z" fill="url(#metalGradient)" stroke="#1E293B" stroke-width="2"/>
+    
+    <!-- Hydraulic cylinder on boom -->
+    <rect x="55" y="-65" width="180" height="12" rx="6" fill="url(#hydraulicGradient)" stroke="#B8860B" stroke-width="1.5"/>
+    <rect x="60" y="-63" width="170" height="8" rx="4" fill="#FEF3C7" opacity="0.3"/>
+    <circle cx="235" cy="-59" r="8" fill="#E8A23A" stroke="#B8860B" stroke-width="2"/>
+    
+    <!-- Boom tip / stick connection -->
+    <g transform="translate(50, -80)">
+      <rect x="-10" y="-10" width="20" height="20" rx="5" fill="url(#metalGradient)" stroke="#1E293B" stroke-width="2"/>
+      <!-- Pivot pin -->
+      <circle cx="0" cy="0" r="6" fill="#E8A23A" stroke="#B8860B" stroke-width="2"/>
+    </g>
+  </g>
+  
+  <!-- Stick (dipper arm) -->
+  <g transform="translate(270, 30)">
+    <path d="M0,0 L0,-80 Q-10,-90 -15,-95 L-45,-95 Q-50,-90 -50,-80 L-50,0 Z" fill="url(#metalGradient)" stroke="#1E293B" stroke-width="2"/>
+    
+    <!-- Hydraulic on stick -->
+    <rect x="-40" y="-85" width="120" height="10" rx="5" fill="url(#hydraulicGradient)" stroke="#B8860B" stroke-width="1.5"/>
+    <rect x="-35" y="-83" width="110" height="6" rx="3" fill="#FEF3C7" opacity="0.3"/>
+    <circle cx="80" cy="-80" r="6" fill="#E8A23A" stroke="#B8860B" stroke-width="1.5"/>
+  </g>
+  
+  <!-- Bucket -->
+  <g transform="translate(225, -65)">
+    <path d="M-50,0 L-50,30 Q-50,45 -35,45 L35,45 Q50,45 50,30 L50,0 Q50,-15 35,-15 L-35,-15 Q-50,-15 -50,0 Z" fill="url(#metalGradient)" stroke="#1E293B" stroke-width="2"/>
+    <!-- Bucket teeth -->
+    <g fill="#334155" stroke="#1E293B" stroke-width="1">
+      <path d="M-40,0 L-35,-10 L-30,0 Z"/>
+      <path d="M-20,0 L-15,-10 L-10,0 Z"/>
+      <path d="M0,0 L5,-10 L10,0 Z"/>
+      <path d="M20,0 L25,-10 L30,0 Z"/>
+      <path d="M40,0 L45,-10 L50,0 Z"/>
+    </g>
+    <!-- Bucket cutting edge highlight -->
+    <path d="M-50,0 L50,0" stroke="#7866E8" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  </g>
+  
+  <!-- Tracks -->
+  <g fill="#0D1B32">
+    <!-- Left track -->
+    <path d="M85,165 L85,180 Q85,190 95,190 L305,190 Q315,190 315,180 L315,165 Q315,155 305,155 L95,155 Q85,155 85,165 Z"/>
+    <!-- Track treads -->
+    <g stroke="#1E293B" stroke-width="2" opacity="0.5">
+      <line x1="100" y1="165" x2="100" y2="180"/>
+      <line x1="130" y1="165" x2="130" y2="180"/>
+      <line x1="160" y1="165" x2="160" y2="180"/>
+      <line x1="190" y1="165" x2="190" y2="180"/>
+      <line x1="220" y1="165" x2="220" y2="180"/>
+      <line x1="250" y1="165" x2="250" y2="180"/>
+      <line x1="280" y1="165" x2="280" y2="180"/>
+    </g>
+    <!-- Right track (inner) -->
+    <path d="M95,165 L95,180 Q95,190 105,190 L295,190 Q305,190 305,180 L305,165 Q305,155 295,155 L105,155 Q95,155 95,165 Z" opacity="0.7"/>
+  </g>
+  
+  <!-- Counterweight -->
+  <rect x="60" y="115" width="20" height="50" rx="3" fill="#1E293B" stroke="#334155" stroke-width="2"/>
+  <text x="70" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="700" fill="#7866E8" transform="rotate(-90, 70, 145)">TESSERA</text>
+  
+  <!-- Work lights -->
+  <g>
+    <!-- Cab roof lights -->
+    <ellipse cx="140" cy="72" rx="8" ry="4" fill="url(#lightGradient)" filter="url(#glow)"/>
+    <ellipse cx="180" cy="72" rx="8" ry="4" fill="url(#lightGradient)" filter="url(#glow)"/>
+    <ellipse cx="210" cy="72" rx="8" ry="4" fill="url(#lightGradient)" filter="url(#glow)"/>
+    <!-- Boom lights -->
+    <ellipse cx="120" cy="-60" rx="10" ry="5" fill="url(#lightGradient)"/>
+    <ellipse cx="320" cy="-80" rx="8" ry="4" fill="url(#lightGradient)"/>
+  </g>
+  
+  <!-- Hydraulic hoses -->
+  <g stroke="#E8A23A" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7">
+    <path d="M205,105 Q205,80 220,70 Q240,55 270,30"/>
+    <path d="M205,100 Q205,80 220,65 Q240,50 270,25"/>
+    <path d="M220,105 Q230,80 260,50 Q280,30 320,-65"/>
+  </g>
+  
+  <!-- Engine details -->
+  <g transform="translate(100, 120)">
+    <rect x="0" y="0" width="80" height="40" rx="4" fill="#1E293B" stroke="#334155" stroke-width="1.5"/>
+    <rect x="10" y="8" width="15" height="15" rx="2" fill="#7866E8" opacity="0.3"/>
+    <rect x="30" y="8" width="15" height="15" rx="2" fill="#16A36A" opacity="0.3"/>
+    <rect x="50" y="8" width="15" height="15" rx="2" fill="#E8A23A" opacity="0.3"/>
+    <text x="40" y="38" text-anchor="middle" font-family="system-ui, sans-serif" font-size="7" font-weight="600" fill="#94A3B8">ENGINE</text>
+  </g>
+  
+  <!-- Brand badge -->
+  <g transform="translate(160, 130)">
+    <ellipse cx="0" cy="0" rx="35" ry="18" fill="url(#accentGradient)" opacity="0.2"/>
+    <text x="0" y="5" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="800" fill="#7866E8">TESSERA</text>
+  </g>
+  
+  <!-- Model info -->
+  <text x="200" y="195" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#64748B" opacity="0.6">HYDRAULIC EXCAVATOR · 320D CLASS</text>
+</svg>
