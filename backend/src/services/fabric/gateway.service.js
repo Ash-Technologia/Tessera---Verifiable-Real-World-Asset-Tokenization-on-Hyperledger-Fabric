@@ -12,6 +12,103 @@ const {
 } = require('../../config/fabric.config');
 
 /**
+ * Circuit breaker for Fabric connections
+ */
+class FabricCircuitBreaker {
+  constructor(mspId, options = {}) {
+    this.mspId = mspId;
+    this.failureThreshold = options.failureThreshold || 5;
+    this.resetTimeout = options.resetTimeout || 30000;
+    this.successThreshold = options.successThreshold || 2;
+    
+    this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
+    this.failures = 0;
+    this.successes = 0;
+    this.lastFailure = 0;
+    this.halfOpenSuccesses = 0;
+  }
+
+  get state() {
+    return this._state;
+  }
+
+  set state(value) {
+    this._state = value;
+    if (this.onStateChange) this.onStateChange(value);
+  }
+
+  recordSuccess() {
+    this.failures = 0;
+    
+    if (this.state === 'HALF_OPEN') {
+      this.halfOpenSuccesses++;
+      if (this.halfOpenSuccesses >= this.successThreshold) {
+        this.state = 'CLOSED';
+        logger.info(`Circuit breaker CLOSED for ${this.mspId}`);
+      }
+    } else if (this.state === 'CLOSED') {
+      this.successes++;
+    }
+  }
+
+  recordFailure() {
+    this.failures++;
+    this.successes = 0;
+    this.lastFailure = Date.now();
+    
+    if (this.state === 'HALF_OPEN') {
+      this.state = 'OPEN';
+      logger.warn(`Circuit breaker OPEN for ${this.mspId} after half-open failure`);
+    } else if (this.failures >= this.failureThreshold) {
+      this.state = 'OPEN';
+      logger.warn(`Circuit breaker OPEN for ${this.mspId} after ${this.failures} failures`);
+    }
+  }
+
+  canExecute() {
+    if (this.state === 'CLOSED') return true;
+    
+    if (this.state === 'OPEN') {
+      // Check if reset timeout has passed
+      if (Date.now() - this.lastFailure > 30000) {
+        this.state = 'HALF_OPEN';
+        logger.info(`Circuit breaker HALF_OPEN for ${this.mspId}`);
+        return true;
+      }
+      return false;
+    }
+    
+    if (this.state === 'HALF_OPEN') return true;
+    
+    return false;
+  }
+
+  halfOpen() {
+    this.state = 'HALF_OPEN';
+    this.halfOpenSuccesses = 0;
+    logger.info(`Circuit breaker HALF_OPEN for ${this.mspId}`);
+  }
+
+  reset() {
+    this.state = 'CLOSED';
+    this.failures = 0;
+    this.successes = 0;
+    this.halfOpenSuccesses = 0;
+    this.lastFailure = 0;
+  }
+
+  getState() {
+    return {
+      state: this.state,
+      failures: this.failures,
+      successes: this.successes,
+      lastFailure: this.lastFailure,
+      mspId: this.mspId,
+    };
+  }
+}
+
+/**
  * TESSERA Fabric Gateway Service
  *
  * Manages the lifecycle of the Fabric Gateway connection:
@@ -54,7 +151,7 @@ class GatewayService {
     /** @type {boolean} */
     this.connected = false;
 
-    /** @type {Map<string, { grpcClient: any, gateway: any, network: any, config: any }>} */
+    /** @type {Map<string, { grpcClient: any, gateway: any, network: any, config: any, circuitBreaker: any }>} */
     this.connections = new Map();
   }
 
@@ -132,7 +229,17 @@ class GatewayService {
       });
 
       const network = gateway.getNetwork(config.channelName);
-      this.connections.set(config.mspId, { grpcClient, gateway, network, config });
+      
+      // Create circuit breaker for this MSP
+      const circuitBreaker = this.createCircuitBreaker(msp);
+      
+      this.connections.set(config.mspId, { 
+        grpcClient, 
+        gateway, 
+        network, 
+        config,
+        circuitBreaker,
+      });
 
       // Default/primary connection attributes for backward compatibility
       if (config.mspId === 'IssuerMSP' || !this.gateway) {
@@ -149,105 +256,316 @@ class GatewayService {
       });
     }
 
-    // Try connecting secondary orgs (VerifierMSP, ComplianceMSP) non-blockingly
-    if (targetMspId === 'IssuerMSP') {
-      for (const secondaryMsp of ['VerifierMSP', 'ComplianceMSP']) {
-        if (!this.connections.has(secondaryMsp)) {
-          try {
-            await this.connect(secondaryMsp);
-          } catch (secErr) {
-            logger.warn(`Could not connect secondary MSP ${secondaryMsp} on startup`, { error: secErr.message });
+    /**
+     * Creates a circuit breaker for an MSP connection
+     */
+    createCircuitBreaker(mspId) {
+      const circuitBreaker = {
+        state: 'CLOSED', // CLOSED, OPEN, HALF_OPEN
+        failures: 0,
+        successes: 0,
+        lastFailure: 0,
+        halfOpenSuccesses: 0,
+        failureThreshold: 5,
+        resetTimeout: 30000,
+        successThreshold: 2,
+        
+        recordSuccess() {
+          this.failures = 0;
+          this.lastFailure = 0;
+          
+          if (this.state === 'HALF_OPEN') {
+            this.halfOpenSuccesses++;
+            if (this.halfOpenSuccesses >= 2) {
+              this.state = 'CLOSED';
+              logger.info(`Circuit breaker CLOSED for ${mspId}`);
+            }
+          } else if (this.state === 'CLOSED') {
+            this.successes++;
           }
-        }
+        },
+        
+        recordFailure() {
+          this.failures++;
+          this.successes = 0;
+          this.lastFailure = Date.now();
+          
+          if (this.state === 'HALF_OPEN') {
+            this.state = 'OPEN';
+            logger.warn(`Circuit breaker OPEN for ${mspId} after half-open failure`);
+          } else if (this.failures >= 5) {
+            this.state = 'OPEN';
+            logger.warn(`Circuit breaker OPEN for ${mspId} after ${this.failures} failures`);
+          }
+        },
+        
+        canExecute() {
+          if (this.state === 'CLOSED') return true;
+          
+          if (this.state === 'OPEN') {
+            // Check if reset timeout has passed
+            if (Date.now() - this.lastFailure > 30000) {
+              this.state = 'HALF_OPEN';
+              logger.info(`Circuit breaker HALF_OPEN for ${mspId}`);
+              return true;
+            }
+            return false;
+          }
+          
+          if (this.state === 'HALF_OPEN') return true;
+          
+          return false;
+        },
+        
+        halfOpen() {
+          this.state = 'HALF_OPEN';
+          this.halfOpenSuccesses = 0;
+          logger.info(`Circuit breaker HALF_OPEN for ${mspId}`);
+        },
+        
+        reset() {
+          this.state = 'CLOSED';
+          this.failures = 0;
+          this.successes = 0;
+          this.halfOpenSuccesses = 0;
+          this.lastFailure = 0;
+        },
+        
+        getState() {
+          return {
+            state: this.state,
+            failures: this.failures,
+            successes: this.successes,
+            lastFailure: this.lastFailure,
+          };
+        },
+        
+        state: 'CLOSED',
+        failures: 0,
+        successes: 0,
+        lastFailure: 0,
+        halfOpenSuccesses: 0,
+        failureThreshold: 5,
+        resetTimeout: 30000,
+        successThreshold: 2,
+      };
+      
+      return circuitBreaker;
+    }
+
+    /**
+     * Ensures that a gateway connection for the specified MSP is established.
+     *
+     * @param {string} mspId
+     */
+    async ensureConnection(mspId = 'IssuerMSP') {
+      if (!this.connections.has(mspId)) {
+        await this.connect(mspId);
       }
     }
-  }
 
-  /**
-   * Ensures that a gateway connection for the specified MSP is established.
-   *
-   * @param {string} mspId
-   */
-  async ensureConnection(mspId = 'IssuerMSP') {
-    if (!this.connections.has(mspId)) {
-      await this.connect(mspId);
+    /**
+     * Returns a contract reference for the given chaincode and organization MSP.
+     * Defaults to 'asset' chaincode and 'IssuerMSP'.
+     *
+     * @param {string} [chaincodeName] - defaults to FABRIC_CHAINCODE env var or 'asset'
+     * @param {string} [targetMspId] - defaults to 'IssuerMSP'
+     * @returns {import('@hyperledger/fabric-gateway').Contract}
+     */
+    getContract(chaincodeName, targetMspId = 'IssuerMSP') {
+      const ccName = chaincodeName || process.env.FABRIC_CHAINCODE || 'asset';
+
+      if (targetMspId && this.connections.has(targetMspId)) {
+        const conn = this.connections.get(targetMspId);
+        
+        // Check circuit breaker
+        if (conn.circuitBreaker && !conn.circuitBreaker.canExecute()) {
+          throw new Error(`Circuit breaker OPEN for ${targetMspId}. Fabric gateway unavailable.`);
+        }
+        
+        return conn.network.getContract(ccName);
+      }
+
+      if (!this.connected || !this.network) {
+        throw new Error(
+          'Fabric Gateway is not connected. Call connect() first or ensure the network is running.'
+        );
+      }
+
+      return this.network.getContract(ccName);
     }
-  }
 
-  /**
-   * Returns a contract reference for the given chaincode and organization MSP.
-   * Defaults to 'asset' chaincode and 'IssuerMSP'.
-   *
-   * @param {string} [chaincodeName] - defaults to FABRIC_CHAINCODE env var or 'asset'
-   * @param {string} [targetMspId] - defaults to 'IssuerMSP'
-   * @returns {import('@hyperledger/fabric-gateway').Contract}
-   */
-  getContract(chaincodeName, targetMspId = 'IssuerMSP') {
-    const ccName = chaincodeName || process.env.FABRIC_CHAINCODE || 'asset';
-
-    if (targetMspId && this.connections.has(targetMspId)) {
-      const conn = this.connections.get(targetMspId);
-      return conn.network.getContract(ccName);
+    /**
+     * Returns the connected network reference for the given MSP.
+     *
+     * @param {string} [targetMspId]
+     * @returns {import('@hyperledger/fabric-gateway').Network}
+     */
+    getNetwork(targetMspId = 'IssuerMSP') {
+      if (targetMspId && this.connections.has(targetMspId)) {
+        const conn = this.connections.get(targetMspId);
+        
+        if (conn.circuitBreaker && !conn.circuitBreaker.canExecute()) {
+          throw new Error(`Circuit breaker OPEN for ${targetMspId}. Fabric gateway unavailable.`);
+        }
+        
+        return conn.network;
+      }
+      
+      if (!this.connected || !this.network) {
+        throw new Error('Fabric Gateway is not connected.');
+      }
+      return this.network;
     }
 
-    if (!this.connected || !this.network) {
-      throw new Error(
-        'Fabric Gateway is not connected. Call connect() first or ensure the network is running.'
+    /**
+     * Executes a Fabric operation with circuit breaker and retry logic
+     * 
+     * @param {string} mspId - The MSP to use for this operation
+     * @param {Function} operation - Async function that performs the Fabric operation
+     * @param {Object} options - Retry options
+     * @returns {Promise<any>} The result of the operation
+     */
+    async executeWithRetry(mspId = 'IssuerMSP', operation, options = {}) {
+      const { maxRetries = 3, baseDelay = 1000, maxDelay = 10000, backoffMultiplier = 2 } = options;
+      
+      const conn = this.connections.get(mspId);
+      if (!conn) {
+        throw new Error(`No connection for MSP ${mspId}`);
+      }
+      
+      const circuitBreaker = conn.circuitBreaker;
+      let lastError;
+      
+      for (let attempt = 0; attempt <= 3; attempt++) {
+        // Check circuit breaker
+        if (circuitBreaker && !circuitBreaker.canExecute()) {
+          throw new Error(`Circuit breaker OPEN for ${mspId}. Too many recent failures.`);
+        }
+        
+        try {
+          const result = await operation();
+          
+          // Record success for circuit breaker
+          if (circuitBreaker) {
+            circuitBreaker.recordSuccess();
+          }
+          
+          return result;
+        } catch (error) {
+          // Record failure for circuit breaker
+          if (circuitBreaker) {
+            circuitBreaker.recordFailure();
+          }
+          
+          lastError = error;
+          
+          // Don't retry on last attempt
+          if (attempt === 3) break;
+          
+          // Check if error is retryable
+          const isRetryable = this.isRetryableError(error);
+          if (!isRetryable) throw error;
+          
+          // Calculate delay with exponential backoff
+          const delay = Math.min(
+            1000 * Math.pow(2, attempt),
+            10000
+          ) + Math.random() * 1000;
+          
+          logger.warn(`Retry attempt ${attempt + 1}/3 for ${mspId} after ${delay}ms`, {
+            error: error.message,
+          });
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+      
+      throw lastError;
+    }
+    
+    /**
+     * Determines if an error is retryable
+     */
+    isRetryableError(error) {
+      if (!error) return false;
+      
+      const message = error.message || '';
+      const retryablePatterns = [
+        'timeout',
+        'timed out',
+        'deadline',
+        'unavailable',
+        'connection',
+        'network',
+        'ECONNREFUSED',
+        'ETIMEDOUT',
+        'ENOTFOUND',
+        'EAI_AGAIN',
+        'FABRIC_UNAVAILABLE',
+        'GATEWAY_TIMEOUT',
+        'SERVICE_UNAVAILABLE',
+      ];
+      
+      return retryablePatterns.some(pattern => 
+        message.toLowerCase().includes(pattern.toLowerCase())
       );
     }
 
-    return this.network.getContract(ccName);
+    /**
+     * Gracefully disconnects all Fabric Gateway connections.
+     */
+    async disconnect() {
+      for (const [msp, conn] of this.connections.entries()) {
+        try {
+          if (conn.gateway) conn.gateway.close();
+          if (conn.grpcClient) conn.grpcClient.close();
+        } catch (err) {
+          logger.warn(`Error disconnecting gateway for ${msp}`, { error: err.message });
+        }
+      }
+      this.connections.clear();
+      this.gateway = null;
+      this.grpcClient = null;
+      this.network = null;
+      this.connected = false;
+      logger.info('All Fabric Gateway connections disconnected.');
+    }
+
+    /**
+     * Returns connection status for health endpoint.
+     */
+    getStatus() {
+      const circuitBreakers = {};
+      for (const [msp, conn] of this.connections.entries()) {
+        if (conn.circuitBreaker) {
+          circuitBreakers[msp] = conn.circuitBreaker.getState ? conn.circuitBreaker.getState() : conn.circuitBreaker;
+        }
+      }
+      
+      return {
+        connected: this.connected,
+        channel: process.env.FABRIC_CHANNEL || 'tessera-channel',
+        peer: process.env.FABRIC_PEER_ENDPOINT || 'localhost:7051',
+        msp: process.env.FABRIC_MSP_ID || 'IssuerMSP',
+        connectedMSPs: Array.from(this.connections.keys()),
+        circuitBreakers,
+      };
+    }
   }
 
   /**
-   * Returns the connected network reference for the given MSP.
-   *
-   * @param {string} [targetMspId]
-   * @returns {import('@hyperledger/fabric-gateway').Network}
+   * Gets circuit breaker status for all connections
    */
-  getNetwork(targetMspId = 'IssuerMSP') {
-    if (targetMspId && this.connections.has(targetMspId)) {
-      return this.connections.get(targetMspId).network;
-    }
-    if (!this.connected || !this.network) {
-      throw new Error('Fabric Gateway is not connected.');
-    }
-    return this.network;
-  }
-
-  /**
-   * Gracefully disconnects all Fabric Gateway connections.
-   */
-  async disconnect() {
+  getCircuitBreakerStatus() {
+    const status = {};
     for (const [msp, conn] of this.connections.entries()) {
-      try {
-        if (conn.gateway) conn.gateway.close();
-        if (conn.grpcClient) conn.grpcClient.close();
-      } catch (err) {
-        logger.warn(`Error disconnecting gateway for ${msp}`, { error: err.message });
+      if (conn.circuitBreaker) {
+        status[msp] = conn.circuitBreaker.getState ? conn.circuitBreaker.getState() : conn.circuitBreaker;
       }
     }
-    this.connections.clear();
-    this.gateway = null;
-    this.grpcClient = null;
-    this.network = null;
-    this.connected = false;
-    logger.info('All Fabric Gateway connections disconnected.');
-  }
-
-  /**
-   * Returns connection status for health endpoint.
-   */
-  getStatus() {
-    return {
-      connected: this.connected,
-      channel: process.env.FABRIC_CHANNEL || 'tessera-channel',
-      peer: process.env.FABRIC_PEER_ENDPOINT || 'localhost:7051',
-      msp: process.env.FABRIC_MSP_ID || 'IssuerMSP',
-      connectedMSPs: Array.from(this.connections.keys()),
-    };
+    return status;
   }
 }
 
-// Export a singleton — one gateway service per backend process
 module.exports = new GatewayService();
