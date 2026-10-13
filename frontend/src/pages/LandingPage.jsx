@@ -1,131 +1,183 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Card, MetricCard, Badge } from '../components/ui/index.js';
-import { Icon } from '../components/ui/Icons.jsx';
+import { Button, Card, Badge, Icon } from '../components/ui/index.js';
 import { APP_NAME, APP_TAGLINE } from '../lib/config.js';
 
 export function LandingPage() {
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-        color: '#f8fafc',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Background pattern */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: `
-            radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.15) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(120, 102, 232, 0.15) 0%, transparent 50%),
-            radial-gradient(circle at 40% 40%, rgba(22, 163, 74, 0.1) 0%, transparent 50%)
-          `,
-          pointerEvents: 'none',
-        }}
-      />
-      
-      {/* Subtle grid pattern */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)
-          `,
-          backgroundSize: '60px 60px',
-          pointerEvents: 'none',
-        }}
-      />
-
-      <main style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <header style={{ padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="40" rx="8" fill="url(#grad)"/>
+    <div className="ts-landing">
+      {/* Navigation Bar */}
+      <header className="ts-landing-nav" role="banner">
+        <div className="ts-container ts-flex ts-flex-between ts-flex-center">
+          <Link to="/" className="ts-landing-logo" aria-label={`${APP_NAME} - Home`}>
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect width="40" height="40" rx="10" fill="url(#navGrad)"/>
               <path d="M20 10L28 20L20 30L12 20L20 10Z" fill="white"/>
               <defs>
-                <linearGradient id="grad" x1="0" y1="0" x2="40" y2="40">
-                  <stop stop-color="#2563eb"/>
-                  <stop offset="1" stop-color="#7c3aed"/>
+                <linearGradient id="navGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#2684E8"/>
+                  <stop offset="1" stopColor="#7866E8"/>
                 </linearGradient>
               </defs>
             </svg>
-            <span style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#f8fafc' }}>{APP_NAME}</span>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <Link to="/login" style={{ color: '#94a3b8', fontWeight: 500, textDecoration: 'none', fontSize: '0.9rem', padding: '0.5rem 1rem', border: '1px solid rgba(148,163,184,0.3)', borderRadius: '8px', transition: 'all 0.2s' }}>
-              Sign In
-            </Link>
-            <Link to="/login" className="ts-btn ts-btn-primary" style={{ textDecoration: 'none', padding: '0.6rem 1.5rem' }}>
+            <span className="ts-landing-logo-text">{APP_NAME}</span>
+          </Link>
+
+          <nav className="ts-landing-nav-links" aria-label="Main navigation">
+            <Link to="/login" className="ts-landing-nav-link">Sign In</Link>
+            <Link to="/login" className="ts-btn ts-btn-primary ts-btn-sm">
+              <Icon name="arrow-right" size={16} />
               Get Started
             </Link>
-          </div>
-        </header>
+          </nav>
+        </div>
+      </header>
 
-        {/* Hero Section */}
-        <section style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '4rem 2rem', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
-          <div style={{ textAlign: 'center', maxWidth: '800px', marginBottom: '3rem' }}>
-            <Badge tone="blue" style={{ fontSize: '0.85rem', padding: '0.5rem 1rem', marginBottom: '1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.6rem', fontWeight: 700, background: 'rgba(37,99,235,0.3)', padding: '2px 6px', borderRadius: '4px' }}>v1.0.0-prototype</span>
-              Hyperledger Fabric 2.5 · Permissioned Network
-            </Badge>
-            <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, lineHeight: 1.1, margin: '0 0 1.5rem', letterSpacing: '-0.03em', background: 'linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+      {/* Hero Section */}
+      <main className="ts-landing-hero" role="main">
+        <div className="ts-container">
+          <div className="ts-landing-hero-content">
+            {/* Trust badge */}
+            <div className="ts-landing-badge" role="status" aria-live="polite">
+              <Icon name="shield-check" size={16} />
+              <span>Enterprise-grade • Hyperledger Fabric 2.5 • Production-ready</span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="ts-landing-headline">
               {APP_TAGLINE}
             </h1>
-            <p style={{ fontSize: 'clamp(1.1rem, 2vw, 1.35rem)', color: '#94a3b8', lineHeight: 1.6, margin: '0 0 2.5rem', maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto' }}>
-              TESSERA is a permissioned real-world asset tokenization platform built on Hyperledger Fabric. 
-              It creates a continuously governed and traceable relationship between a real-world asset, its evidence, 
-              verification, valuation, token, ownership history, and compliance trail.
+
+            {/* Subheadline */}
+            <p className="ts-landing-subheadline">
+              A permissioned real-world asset tokenization platform built on Hyperledger Fabric.
+              Create, verify, value, and tokenize real-world assets with institutional-grade governance,
+              cryptographic integrity, and regulatory compliance.
             </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-              <Link to="/login" className="ts-btn ts-btn-primary" style={{ padding: '0.85rem 2rem', fontSize: '1rem', fontWeight: 600, textDecoration: 'none' }}>
-                <Icon name="rocket" size={18} />
-                <span>Launch Console</span>
+
+            {/* CTA Buttons */}
+            <div className="ts-landing-cta-group">
+              <Link to="/login" className="ts-btn ts-btn-primary ts-btn-lg ts-landing-btn-primary">
+                <Icon name="arrow-right" size={18} />
+                Launch Console
               </Link>
-              <Link to="#features" className="ts-btn ts-btn-secondary" style={{ padding: '0.85rem 2rem', fontSize: '1rem', fontWeight: 600, textDecoration: 'none', borderColor: 'rgba(148,163,184,0.5)', color: '#e2e8f0' }}>
+              <Link to="#features" className="ts-btn ts-btn-secondary ts-btn-lg ts-landing-btn-secondary">
                 Explore Features
+                <Icon name="arrow-right" size={18} />
               </Link>
             </div>
+
+            {/* Trust indicators */}
+            <div className="ts-landing-trust-indicators" role="list" aria-label="Platform capabilities">
+              <div className="ts-trust-item" role="listitem">
+                <div className="ts-trust-icon" style={{ background: 'var(--ts-blue-100)', color: 'var(--ts-blue-600)' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 9v10M9 12h6"/></svg>
+                </div>
+                <span className="ts-trust-label">Hyperledger Fabric 2.5</span>
+              </div>
+              <div className="ts-trust-item" role="listitem">
+                <div className="ts-trust-icon" style={{ background: 'var(--ts-success-100)', color: 'var(--ts-success-600)' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <span className="ts-trust-label">SHA-256 Integrity</span>
+              </div>
+              <div className="ts-trust-item" role="listitem">
+                <div className="ts-trust-icon" style={{ background: 'var(--ts-purple-100)', color: 'var(--ts-purple-600)' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <span className="ts-trust-label">Multi-org Governance</span>
+              </div>
+              <div className="ts-trust-item" role="listitem">
+                <div className="ts-trust-icon" style={{ background: 'var(--ts-warning-100)', color: 'var(--ts-warning-600)' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                </div>
+                <span className="ts-trust-label">Audit Trail</span>
+              </div>
+            </div>
           </div>
 
-          {/* Trust Indicators */}
-          <div style={{ display: 'flex', gap: '3rem', justifyContent: 'center', flexWrap: 'wrap', opacity: 0.6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Icon name="shield-check" size={20} style={{ color: '#16a34a' }}/>
-              <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Maker-Checker Verification</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Icon name="hash" size={20} style={{ color: '#2563eb' }}/>
-              <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>SHA-256 Evidence Integrity</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Icon name="blockchain" size={20} style={{ color: '#7c3aed' }}/>
-              <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>On-Chain Audit Trail</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Icon name="building" size={20} style={{ color: '#e8a23a' }}/>
-              <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Multi-Org Governance</span>
+          {/* Hero Visual */}
+          <div className="ts-landing-hero-visual" aria-hidden="true">
+            <div className="ts-hero-visual-card">
+              <div className="ts-hero-visual-header">
+                <div className="ts-hero-visual-dots">
+                  <span></span><span></span><span></span>
+                </div>
+                <span className="ts-hero-visual-title">Asset Passport</span>
+              </div>
+              <div className="ts-hero-visual-content">
+                <div className="ts-hero-asset-preview">
+                  <div className="ts-hero-asset-image">
+                    <svg width="280" height="160" viewBox="0 0 280 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                      <defs>
+                        <linearGradient id="heroAssetGrad" x1="0" y1="0" x2="280" y2="160" gradientUnits="userSpaceOnUse">
+                          <stop stopColor="#2684E8" stopOpacity="0.1"/>
+                          <stop offset="1" stopColor="#7866E8" stopOpacity="0.1"/>
+                        </linearGradient>
+                      </defs>
+                      <rect width="280" height="160" rx="12" fill="url(#heroAssetGrad)"/>
+                      <path d="M140 40L160 65L140 90L120 65L140 40Z" fill="none" stroke="#2684E8" strokeWidth="2" opacity="0.6"/>
+                      <circle cx="140" cy="65" r="15" fill="none" stroke="#2684E8" strokeWidth="1.5" opacity="0.4"/>
+                      <text x="140" y="125" text-anchor="middle" font-family="system-ui" font-size="11" fill="#64748B" fontWeight="500">VEH-2025-001</text>
+                    </svg>
+                  </div>
+                  <div className="ts-hero-asset-badge">VERIFIED</div>
+                </div>
+                <div className="ts-hero-metrics">
+                  <div className="ts-hero-metric">
+                    <span className="ts-hero-metric-value">$2.4M</span>
+                    <span className="ts-hero-metric-label">Asset Value</span>
+                  </div>
+                  <div className="ts-hero-metric">
+                    <span className="ts-hero-metric-value">VERIFIED</span>
+                    <span className="ts-hero-metric-label">Status</span>
+                  </div>
+                  <div className="ts-hero-metric">
+                    <span className="ts-hero-metric-value">100%</span>
+                    <span className="ts-hero-metric-label">Integrity</span>
+                  </div>
+                </div>
+              </div>
+              <div className="ts-hero-verification-bar">
+                <div className="ts-hero-verification-step completed">
+                  <span className="ts-hero-step-icon">✓</span>
+                  <span>Registered</span>
+                </div>
+                <div className="ts-hero-step-connector"></div>
+                <div className="ts-hero-verification-step completed">
+                  <span className="ts-hero-step-icon">✓</span>
+                  <span>Verified</span>
+                </div>
+                <div className="ts-hero-step-connector"></div>
+                <div className="ts-hero-verification-step completed">
+                  <span className="ts-hero-step-icon">✓</span>
+                  <span>Valued</span>
+                </div>
+                <div className="ts-hero-step-connector"></div>
+                <div className="ts-hero-verification-step completed">
+                  <span className="ts-hero-step-icon">✓</span>
+                  <span>Approved</span>
+                </div>
+                <div className="ts-hero-step-connector"></div>
+                <div className="ts-hero-verification-step current">
+                  <span className="ts-hero-step-icon">◆</span>
+                  <span>Tokenized</span>
+                </div>
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </main>
 
-        {/* Features Section */}
-        <section id="features" style={{ padding: '5rem 2rem', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 700, margin: '0 0 1rem', color: '#f8fafc' }}>Platform Capabilities</h2>
-            <p style={{ fontSize: '1.1rem', color: '#94a3b8', maxWidth: '600px', margin: '0 auto' }}>
-              Every capability is grounded in on-chain state — no mock data, no simulated ledger.
-            </p>
-          </div>
+      {/* Features Section */}
+      <section id="features" className="ts-landing-features" aria-labelledby="features-heading">
+        <div className="ts-container">
+          <header className="ts-landing-section-header">
+            <h2 id="features-heading" className="ts-landing-section-title">Platform Capabilities</h2>
+            <p className="ts-landing-section-subtitle">Every capability is grounded in on-chain state — no mock data, no simulated ledger.</p>
+          </header>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', maxWidth: '1440px', margin: '0 auto' }}>
+          <div className="ts-features-grid">
             {[
               {
                 icon: 'asset-tag',
@@ -175,177 +227,134 @@ export function LandingPage() {
                 description: 'Immutable audit trail for every mutation. Operational health workspace with Fabric gateway, peer, and channel status.',
                 features: ['Event Sourcing', 'Time-Machine Queries', 'Health Monitoring', 'Channel Topology']
               },
-            ].map((feature, idx) => (
-              <Card
-                key={feature.title}
-                style={{
-                  background: 'rgba(30, 41, 59, 0.6)',
-                  backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '16px',
-                  padding: '1.75rem',
-                  transition: 'all 0.3s ease',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #2563eb, #7c3aed, #16a34a)' }}/>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
-                  <div
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '12px',
-                      background: 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(120,102,232,0.2))',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Icon name={feature.icon} size={22} style={{ color: '#60a5fa' }}/>
-                  </div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc', margin: '0.25rem 0 0' }}>{feature.title}</h3>
+            ].map((feature, index) => (
+              <article key={feature.title} className="ts-feature-card">
+                <div className="ts-feature-icon">
+                  <Icon name={feature.icon} size={24} />
                 </div>
-                <p style={{ color: '#94a3b8', lineHeight: 1.6, margin: '0 0 1rem', fontSize: '0.95rem' }}>{feature.description}</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h3 className="ts-feature-title">{feature.title}</h3>
+                <p className="ts-feature-description">{feature.description}</p>
+                <ul className="ts-feature-list">
                   {feature.features.map((f, i) => (
-                    <Badge key={i} tone="neutral" style={{ fontSize: '0.7rem', padding: '0.25rem 0.6rem', background: 'rgba(148,163,184,0.15)', borderColor: 'rgba(148,163,184,0.3)' }}>
-                      {f}
-                    </Badge>
+                    <li key={i} className="ts-feature-item">{f}</li>
                   ))}
-                </div>
-              </Card>
+                </ul>
+              </article>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Architecture Section */}
-        <section style={{ padding: '5rem 2rem', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 700, margin: '0 0 1rem', color: '#f8fafc' }}>Architecture</h2>
-            <p style={{ fontSize: '1.1rem', color: '#94a3b8', maxWidth: '600px', margin: '0 auto' }}>
-              Browser → React → Express → Fabric Gateway → Chaincode → Ledger → CouchDB
-            </p>
-          </div>
+      {/* Architecture Section */}
+      <section className="ts-landing-architecture" aria-labelledby="architecture-heading">
+        <div className="ts-container">
+          <header className="ts-landing-section-header">
+            <h2 id="architecture-heading" className="ts-landing-section-title">Architecture</h2>
+            <p className="ts-landing-section-subtitle">Browser → React → Express → Fabric Gateway → Chaincode → Ledger → CouchDB</p>
+          </header>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '1000px', margin: '0 auto' }}>
+          <div className="ts-architecture-layers">
             {[
               { layer: 'Frontend', tech: 'React 18 + Vite + React Router 6 + Custom CSS', desc: 'Role-aware workspaces, real-time queries, no mock data' },
               { layer: 'Backend API', tech: 'Node.js 20 + Express + Fabric Gateway 1.7', desc: 'JWT auth, RBAC, template validation, policy evaluation' },
               { layer: 'Chaincode', tech: 'Go 1.21 + Fabric 2.5.16 Contract API', desc: 'Generic asset model, evidence, verification, valuation, tokens, ownership, transfers, lifecycle, audit' },
               { layer: 'Network', tech: '4 CAs + 1 Orderer + 3 Peers + 3 CouchDBs', desc: 'IssuerMSP, VerifierMSP, ComplianceMSP — Raft consensus' },
               { layer: 'Storage', tech: 'MinIO/S3-compatible + CouchDB world state', desc: 'Off-chain evidence with SHA-256, on-chain indexes' },
-            ].map((layer, idx) => (
-              <Card
-                key={layer.layer}
-                style={{
-                  background: idx % 2 === 0 ? 'rgba(30, 41, 59, 0.4)' : 'rgba(15, 23, 42, 0.6)',
-                  backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: '12px',
-                  padding: '1.5rem 2rem',
-                  display: 'grid',
-                  gridTemplateColumns: '140px 1fr 280px',
-                  alignItems: 'center',
-                  gap: '2rem',
-                }}
-              >
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{layer.layer}</div>
-                <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, monospace', fontSize: '0.9rem', color: '#e2e8f0', lineHeight: 1.5 }}>{layer.tech}</div>
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5 }}>{layer.desc}</div>
-              </Card>
+            ].map((layer, index) => (
+              <div key={layer.layer} className="ts-arch-layer">
+                <div className="ts-arch-layer-badge">{index + 1}</div>
+                <div className="ts-arch-layer-content">
+                  <h3 className="ts-arch-layer-title">{layer.layer}</h3>
+                  <p className="ts-arch-layer-tech">{layer.tech}</p>
+                  <p className="ts-arch-layer-desc">{layer.desc}</p>
+                </div>
+              </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Asset Types */}
-        <section style={{ padding: '5rem 2rem', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', fontWeight: 700, margin: '0 0 1rem', color: '#f8fafc' }}>Supported Asset Classes</h2>
-            <p style={{ fontSize: '1.1rem', color: '#94a3b8', maxWidth: '600px', margin: '0 auto' }}>
-              Each asset class has its own schema, evidence requirements, valuation methods, and lifecycle — all configuration-driven.
+      {/* Asset Classes Section */}
+      <section className="ts-landing-asset-classes" aria-labelledby="asset-classes-heading">
+        <div className="ts-container">
+          <header className="ts-landing-section-header">
+            <h2 id="asset-classes-heading" className="ts-landing-section-title">Supported Asset Classes</h2>
+            <p className="ts-landing-section-subtitle">Each asset class has its own schema, evidence requirements, valuation methods, and lifecycle — all configuration-driven.</            </header>
+
+            <div className="ts-asset-class-grid">
+              {[
+                { type: 'vehicle', title: 'Vehicle', icon: 'truck', color: '#2563eb', fields: 'VIN, Registration, Manufacturer, Model, Year, Mileage', evidence: 'RC Certificate, Commercial Insurance Policy, Physical Inspection Report' },
+                { type: 'land', title: 'Land', icon: 'map-pin', color: '#16a34a', fields: 'Survey Number, Location, Area (sq ft), Zoning', evidence: 'Title Deed, Survey Record, Tax Receipt' },
+                { type: 'grain', title: 'Grain', icon: 'wheat', color: '#e8a23a', fields: 'Crop Type, Quantity, Unit, Grade, Warehouse', evidence: 'Warehouse Receipt, Batch Certificate, Quality Assay' },
+                { type: 'equipment', title: 'Equipment', icon: 'cog', color: '#7c3aed', fields: 'Equipment Name, Serial Number, Manufacturer, OEM Year', evidence: 'Purchase Invoice, OEM Warranty, Maintenance Log' },
+              ].map((asset) => (
+                <article key={asset.type} className="ts-asset-class-card" style={{ '--asset-color': asset.color }}>
+                  <div className="ts-asset-class-icon" style={{ background: `${asset.color}20` }}>
+                    <Icon name={asset.icon} size={28} style={{ color: asset.color }} />
+                  </div>
+                  <h3 className="ts-asset-class-title">{asset.title}</h3>
+                  <div className="ts-asset-class-fields">
+                    <strong>Fields:</strong> {asset.fields}
+                  </div>
+                  <div className="ts-asset-class-evidence">
+                    <strong>Evidence:</strong> {asset.evidence}
+                  </div>
+                </article>
+              ))}
+            </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="ts-landing-cta" aria-labelledby="cta-heading">
+        <div className="ts-container">
+          <div className="ts-cta-card">
+            <h2 id="cta-heading" className="ts-cta-title">Ready to Tokenize Real Assets?</h2>
+            <p className="ts-cta-subtitle">Deploy the network, register your first asset, and experience verifiable tokenization on Hyperledger Fabric.
             </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', maxWidth: '1440px', margin: '0 auto' }}>
-            {[
-              { type: 'vehicle', title: 'Vehicle', icon: 'truck', color: '#2563eb', fields: 'VIN, Registration, Manufacturer, Model, Year, Mileage', evidence: 'RC Certificate, Insurance, Inspection Report' },
-              { type: 'land', title: 'Land', icon: 'map-pin', color: '#16a34a', fields: 'Survey Number, Location, Area (sq ft), Zoning', evidence: 'Title Deed, Survey Record, Tax Receipt' },
-              { type: 'grain', title: 'Grain', icon: 'wheat', color: '#e8a23a', fields: 'Crop Type, Quantity, Unit, Grade, Warehouse', evidence: 'Warehouse Receipt, Batch Cert, Quality Assay' },
-              { type: 'equipment', title: 'Equipment', icon: 'cog', color: '#7c3aed', fields: 'Serial Number, Model, Manufacturer, Year, Hours', evidence: 'Purchase Invoice, OEM Warranty, Maintenance Log' },
-            ].map((asset) => (
-              <Card
-                key={asset.type}
-                style={{
-                  background: 'rgba(30, 41, 59, 0.5)',
-                  backdropFilter: 'blur(16px)',
-                  border: `1px solid ${asset.color}40`,
-                  borderRadius: '16px',
-                  padding: '1.75rem',
-                  textAlign: 'center',
-                  transition: 'all 0.3s ease',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: asset.color }}/>
-                <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: `${asset.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-                  <Icon name={asset.icon} size={28} style={{ color: asset.color }}/>
-                </div>
-                <h3 style={{ fontSize: '1.35rem', fontWeight: 700, color: '#f8fafc', margin: '0 0 0.5rem' }}>{asset.title}</h3>
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '1rem', lineHeight: 1.6 }}>
-                  <strong style={{ color: '#cbd5e1' }}>Fields:</strong> {asset.fields}
-                </div>
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.6 }}>
-                  <strong style={{ color: '#cbd5e1' }}>Evidence:</strong> {asset.evidence}
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section style={{ padding: '5rem 2rem', maxWidth: '800px', margin: '0 auto', width: '100%', textAlign: 'center' }}>
-          <div style={{ background: 'linear-gradient(135deg, rgba(37,99,235,0.2) 0%, rgba(120,102,232,0.2) 100%)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '24px', padding: '3rem 2rem' }}>
-            <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 700, margin: '0 0 1rem', color: '#f8fafc' }}>Ready to Tokenize Real Assets?</h2>
-            <p style={{ fontSize: '1.1rem', color: '#94a3b8', margin: '0 0 2rem', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>
-              Deploy the network, register your first asset, and experience verifiable tokenization on Hyperledger Fabric.
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link to="/login" className="ts-btn ts-btn-primary" style={{ padding: '0.85rem 2rem', fontSize: '1rem', fontWeight: 600, textDecoration: 'none' }}>
+            <div className="ts-cta-actions">
+              <Link to="/login" className="ts-btn ts-btn-primary ts-btn-lg">
                 <Icon name="arrow-right" size={18} />
-                <span>Enter Console</span>
+                Enter Console
               </Link>
-              <a href="https://github.com/Ash-Technologia/Tessera---Verifiable-Real-World-Asset-Tokenization-on-Hyperledger-Fabric" target="_blank" rel="noopener noreferrer" style={{ padding: '0.85rem 2rem', fontSize: '1rem', fontWeight: 600', color: '#94a3b8', border: '1px solid rgba(148,163,184,0.3)', borderRadius: '8px', textDecoration: 'none', transition: 'all 0.2s' }}>
+              <a href="https://github.com/Ash-Technologia/Tessera---Verifiable-Real-World-Asset-Tokenization-on-Hyperledger-Fabric" target="_blank" rel="noopener noreferrer" className="ts-btn ts-btn-secondary ts-btn-lg">
                 View on GitHub
               </a>
             </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
+      </section>
 
       {/* Footer */}
-      <footer style={{ padding: '2rem', borderTop: '1px solid rgba(255,255,255,0.05)', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', maxWidth: '1440px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#64748b', fontSize: '0.85rem' }}>
-            <svg width="24" height="24" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="40" rx="8" fill="url(#grad2)"/>
-              <path d="M20 10L28 20L20 30L12 20L20 10Z" fill="white"/>
-              <defs>
-                <linearGradient id="grad2" x1="0" y1="0" x2="40" y2="40">
-                  <stop stop-color="#2563eb"/>
-                  <stop offset="1" stop-color="#7c3aed"/>
-                </linearGradient>
-              </defs>
-            </svg>
-            <span style={{ fontWeight: 600 }}>{APP_NAME}</span>
+      <footer className="ts-landing-footer" role="contentinfo">
+        <div className="ts-container">
+          <div className="ts-footer-grid">
+            <div className="ts-footer-brand">
+              <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect width="40" height="40" rx="8" fill="url(#footerGrad)"/>
+                <path d="M20 10L28 20L20 30L12 20L20 10Z" fill="white"/>
+                <defs>
+                  <linearGradient id="footerGrad" x1="0" y1="0" x2="40" y2="40">
+                    <stop stopColor="#2563eb"/>
+                    <stop offset="1" stopColor="#7c3aed"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span className="ts-footer-logo-text">{APP_NAME}</span>
+            </div>
+            <p className="ts-footer-tagline">Real Assets. Real Trust.</p>
+
+            <div className="ts-footer-links">
+              <a href="https://github.com/Ash-Technologia/Tessera---Verifiable-Real-World-Asset-Tokenization-on-Hyperledger-Fabric" target="_blank" rel="noopener noreferrer" className="ts-footer-link">GitHub</a>
+              <span className="ts-footer-divider">Hyperledger Fabric 2.5</span>
+              <span className="ts-footer-divider">MIT License</span>
+              <span className="ts-footer-divider">v1.0.0-prototype</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '1.5rem', color: '#64748b', fontSize: '0.8rem' }}>
-            <a href="https://github.com/Ash-Technologia/Tessera---Verifiable-Real-World-Asset-Tokenization-on-Hyperledger-Fabric" target="_blank" rel="noopener noreferrer" style={{ color: '#64748b', textDecoration: 'none' }}>GitHub</a>
-            <span>Hyperledger Fabric 2.5</span>
-            <span>MIT License</span>
-            <span>v1.0.0-prototype</span>
+          <div className="ts-footer-bottom">
+            <p className="ts-footer-copyright">© 2026 TESSERA. Built for institutional-grade asset tokenization.
+            </p>
           </div>
         </div>
       </footer>

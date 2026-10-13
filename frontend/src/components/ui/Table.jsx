@@ -1,24 +1,32 @@
 import React from 'react';
 
-/**
- * Dense data table. Columns: [{ key, header, render?(row), align? }].
- * Render functions keep cell formatting local to the consuming page.
- */
-export function Table({ columns = [], rows = [], rowKey, caption, emptyMessage = 'No rows to display.' }) {
-  const keyFor = (row, index) => {
-    if (typeof rowKey === 'function') return rowKey(row, index);
-    if (rowKey && row && row[rowKey] !== undefined) return String(row[rowKey]);
-    return `row-${index}`;
-  };
+export function Table({
+  columns = [],
+  rows = [],
+  rowKey = 'id',
+  caption,
+  emptyMessage = 'No data available',
+  className = '',
+  striped = false,
+  hoverable = true,
+  'aria-label': ariaLabel,
+}) {
   return (
-    <div className="ts-table-wrap">
-      <table className="ts-table">
-        {caption ? <caption className="ts-metadata">{caption}</caption> : null}
+    <div className={`ts-table-container ${className}`} role="region" aria-label={ariaLabel} tabIndex={0}>
+      {caption && (
+        <caption className="ts-table-caption">{caption}</caption>
+      )}
+      <table className={`ts-table ${striped ? 'ts-table-striped' : ''} ${hoverable ? 'ts-table-hoverable' : ''}`} role="grid">
         <thead>
-          <tr>
-            {columns.map((col) => (
-              <th key={col.key} scope="col" style={col.align ? { textAlign: col.align } : undefined}>
-                {col.header}
+          <tr role="row">
+            {columns.map((column) => (
+              <th
+                key={column.key}
+                scope="col"
+                style={{ width: column.width, textAlign: column.align }}
+                aria-sort={column.sortable ? 'none' : undefined}
+              >
+                {column.header}
               </th>
             ))}
           </tr>
@@ -26,21 +34,25 @@ export function Table({ columns = [], rows = [], rowKey, caption, emptyMessage =
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="ts-metadata">{emptyMessage}</td>
+              <td colSpan={columns.length} className="ts-table-empty" style={{ textAlign: 'center', padding: 'var(--ts-space-8)', color: 'var(--ts-ink-muted)' }}>
+                {emptyMessage}
+              </td>
             </tr>
           ) : (
-            rows.map((row, index) => (
-              <tr key={keyFor(row, index)}>
-                {columns.map((col) => (
-                  <td key={col.key} style={col.align ? { textAlign: col.align } : undefined}>
-                    {typeof col.render === 'function' ? col.render(row, index) : row[col.key]}
+            rows.map((row, rowIndex) => (
+              <tr key={row[rowKey] || rowIndex} role="row">
+                {columns.map((column) => (
+                  <td key={column.key} style={{ textAlign: column.align }}>
+                    {column.render
+                      ? column.render(row[column.key], row, rowIndex)
+                      : row[column.key]}
                   </td>
                 ))}
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

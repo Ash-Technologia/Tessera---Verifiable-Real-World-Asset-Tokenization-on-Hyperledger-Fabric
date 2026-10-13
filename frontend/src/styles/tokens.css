@@ -1,64 +1,297 @@
-/* TESSERA design tokens (Phase 8A).
-   Enterprise RWA direction: light surfaces, deep navy/slate, restrained
-   accents, semantic status colors. No neon, no heavy gradients. */
+/* =============================================================================
+   TESSERA Design System Tokens — Enterprise Real-World Asset Tokenization
+   Premium Edition — v2.0
+   ============================================================================= */
 
 :root {
-  /* Surfaces */
-  --ts-bg: #f7f8fa;
-  --ts-surface: #ffffff;
-  --ts-surface-alt: #eef1f5;
-  --ts-border: #dde3ea;
-  --ts-border-strong: #c3ccd7;
+  /* ============================================================================
+     COLOR SYSTEM — Premium Enterprise Palette
+     ============================================================================ */
 
-  /* Ink */
-  --ts-ink: #16213a;
-  --ts-ink-soft: #3d4a63;
-  --ts-ink-muted: #6b7689;
-  --ts-ink-faint: #98a2b3;
+  /* ---- Core Surfaces ---- */
+  --ts-bg: #F3F6FA;
+  --ts-bg-elevated: #FFFFFF;
+  --ts-surface: #FFFFFF;
+  --ts-surface-hover: #F0F4FA;
+  --ts-surface-pressed: #E8EEF5;
+  --ts-surface-overlay: rgba(255, 255, 255, 0.95);
 
-  /* Primary: deep navy / dark slate */
-  --ts-navy-900: #101c33;
-  --ts-navy-800: #16294b;
-  --ts-navy-700: #1f3a66;
-  --ts-primary: #1f3a66;
-  --ts-primary-hover: #16294b;
-  --ts-on-primary: #ffffff;
+  /* ---- Borders ---- */
+  --ts-border: #E3EAF2;
+  --ts-border-strong: #CDD8E5;
+  --ts-border-focus: #2684E8;
+  --ts-border-subtle: #F0F4FA;
 
-  /* Accents (restrained) */
-  --ts-accent-blue: #2563b8;
-  --ts-accent-teal: #0e7c7b;
-  --ts-accent-gold: #9a7418;
-  --ts-accent-purple: #6b4fa8;
+  /* ---- Text & Ink ---- */
+  --ts-ink: #15243A;
+  --ts-ink-heading: #0D1B32;
+  --ts-ink-subtle: #4A5568;
+  --ts-ink-muted: #718096;
+  --ts-ink-faint: #A0AEC0;
+  --ts-ink-on-primary: #FFFFFF;
+  --ts-ink-on-dark: #FFFFFF;
 
-  /* Status */
-  --ts-success: #18794e;
-  --ts-success-bg: #e6f4ec;
-  --ts-warning: #9a6200;
-  --ts-warning-bg: #fdf1dc;
-  --ts-danger: #b4232a;
-  --ts-danger-bg: #fbe9ea;
-  --ts-neutral: #5b6472;
-  --ts-neutral-bg: #eef1f5;
+  /* ---- Brand Navy (Primary) ---- */
+  --ts-navy-950: #08182E;
+  --ts-navy-900: #0D1B32;
+  --ts-navy-800: #142B4A;
+  --ts-navy-700: #1E3E6B;
+  --ts-navy-600: #255C8E;
+  --ts-navy-500: #17375E;
+  --ts-navy-400: #2D6BA3;
+  --ts-navy-300: #4A8FC7;
+  --ts-navy-200: #8ABBE6;
+  --ts-navy-100: #D6E8F7;
+  --ts-navy-50: #EBF3FC;
 
-  /* Typography */
-  --ts-font-sans: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  /* ---- Primary Blue (Action) ---- */
+  --ts-blue-600: #2684E8;
+  --ts-blue-500: #3B8CF0;
+  --ts-blue-400: #5BA3F3;
+  --ts-blue-300: #8BC0F6;
+  --ts-blue-200: #BCD8FC;
+  --ts-blue-100: #DBEAFE;
+  --ts-blue-50: #EAF3FF;
+  --ts-blue-700: #1B72D3;
+  --ts-blue-800: #1A5A9E;
+
+  /* ---- Semantic Colors ---- */
+  /* Success / Green */
+  --ts-success-600: #16A36A;
+  --ts-success-500: #22C55E;
+  --ts-success-400: #4ADE80;
+  --ts-success-300: #86EFAC;
+  --ts-success-200: #B7E8CE;
+  --ts-success-100: #D1FAD2;
+  --ts-success-50: #E9F8F0;
+
+  /* Warning / Amber */
+  --ts-warning-600: #D97706;
+  --ts-warning-500: #F59E0B;
+  --ts-warning-400: #FBBF24;
+  --ts-warning-300: #FCD34D;
+  --ts-warning-200: #FDE68A;
+  --ts-warning-100: #FEF3C7;
+  --ts-warning-50: #FFF5E6;
+
+  /* Danger / Red */
+  --ts-danger-600: #DC2626;
+  --ts-danger-500: #EF4444;
+  --ts-danger-400: #F87171;
+  --ts-danger-300: #FCA5A5;
+  --ts-danger-200: #FECACA;
+  --ts-danger-100: #FEE2E2;
+  --ts-danger-50: #FFF0F1;
+
+  /* Neutral / Slate */
+  --ts-neutral-600: #5A6A80;
+  --ts-neutral-500: #6B7B90;
+  --ts-neutral-400: #94A3B8;
+  --ts-neutral-300: #CBD5E1;
+  --ts-neutral-200: #E2E8F0;
+  --ts-neutral-100: #F1F5F9;
+  --ts-neutral-50: #F8FAFC;
+
+  /* ---- Accent Colors ---- */
+  --ts-purple-600: #7866E8;
+  --ts-purple-500: #8B7CF0;
+  --ts-purple-100: #F1EFFF;
+  --ts-purple-50: #F5F3FF;
+
+  --ts-teal-600: #29B8A0;
+  --ts-teal-500: #38C8B4;
+  --ts-teal-100: #E6F8F5;
+  --ts-teal-50: #F0FDFC;
+
+  --ts-gold-600: #E8A23A;
+  --ts-gold-500: #F0B429;
+  --ts-gold-100: #FEF3C7;
+  --ts-gold-50: #FFF8E1;
+
+  /* ---- Semantic Aliases (for backward compatibility) ---- */
+  --ts-primary: var(--ts-navy-800);
+  --ts-primary-hover: var(--ts-navy-900);
+  --ts-on-primary: var(--ts-ink-on-primary);
+  --ts-success: var(--ts-success-600);
+  --ts-success-bg: var(--ts-success-50);
+  --ts-success-border: var(--ts-success-200);
+  --ts-warning: var(--ts-warning-600);
+  --ts-warning-bg: var(--ts-warning-50);
+  --ts-warning-border: var(--ts-warning-200);
+  --ts-danger: var(--ts-danger-600);
+  --ts-danger-bg: var(--ts-danger-50);
+  --ts-danger-border: var(--ts-danger-200);
+  --ts-neutral: var(--ts-neutral-600);
+  --ts-neutral-bg: var(--ts-neutral-50);
+  --ts-neutral-border: var(--ts-neutral-200);
+  --ts-accent-blue: var(--ts-blue-600);
+  --ts-accent-teal: var(--ts-teal-600);
+  --ts-accent-purple: var(--ts-purple-600);
+  --ts-accent-gold: var(--ts-gold-600);
+
+  /* ============================================================================
+     TYPOGRAPHY
+     ============================================================================ */
+
+  --ts-font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --ts-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --ts-text-xs: 0.72rem;
-  --ts-text-sm: 0.82rem;
-  --ts-text-md: 0.94rem;
-  --ts-text-lg: 1.1rem;
-  --ts-text-xl: 1.35rem;
-  --ts-text-2xl: 1.7rem;
 
-  /* Shape + elevation */
-  --ts-radius-sm: 4px;
+  /* Fluid type scale using clamp for responsiveness */
+  --ts-text-2xs: 0.625rem;   /* 10px */
+  --ts-text-xs: 0.75rem;     /* 12px */
+  --ts-text-sm: 0.8125rem;   /* 13px */
+  --ts-text-base: 0.875rem;  /* 14px */
+  --ts-text-md: 0.9375rem;   /* 15px */
+  --ts-text-lg: 1.125rem;    /* 18px */
+  --ts-text-xl: 1.375rem;    /* 22px */
+  --ts-text-2xl: 1.75rem;    /* 28px */
+  --ts-text-3xl: 2.25rem;    /* 36px */
+  --ts-text-4xl: 3rem;       /* 48px */
+
+  /* Font weights */
+  --ts-font-normal: 400;
+  --ts-font-medium: 500;
+  --ts-font-semibold: 600;
+  --ts-font-bold: 700;
+  --ts-font-extrabold: 800;
+
+  /* Line heights */
+  --ts-leading-tight: 1.1;
+  --ts-leading-snug: 1.25;
+  --ts-leading-normal: 1.5;
+  --ts-leading-relaxed: 1.625;
+
+  /* ============================================================================
+     SPACING SYSTEM (4px base unit)
+     ============================================================================ */
+
+  --ts-space-0: 0;
+  --ts-space-1: 0.25rem;  /* 4px */
+  --ts-space-2: 0.5rem;   /* 8px */
+  --ts-space-3: 0.75rem;  /* 12px */
+  --ts-space-4: 1rem;     /* 16px */
+  --ts-space-5: 1.25rem;  /* 20px */
+  --ts-space-6: 1.5rem;   /* 24px */
+  --ts-space-8: 2rem;     /* 32px */
+  --ts-space-10: 2.5rem;  /* 40px */
+  --ts-space-12: 3rem;    /* 48px */
+  --ts-space-16: 4rem;    /* 64px */
+  --ts-space-20: 5rem;    /* 80px */
+  --ts-space-24: 6rem;    /* 96px */
+
+  /* ============================================================================
+     SHAPES & RADIUS
+     ============================================================================ */
+
+  --ts-radius-none: 0;
+  --ts-radius-xs: 4px;
+  --ts-radius-sm: 6px;
   --ts-radius-md: 8px;
   --ts-radius-lg: 12px;
-  --ts-shadow-sm: 0 1px 2px rgba(16, 28, 51, 0.08);
-  --ts-shadow-md: 0 2px 8px rgba(16, 28, 51, 0.1);
+  --ts-radius-xl: 16px;
+  --ts-radius-2xl: 24px;
+  --ts-radius-full: 9999px;
 
-  /* Layout */
-  --ts-sidebar-width: 248px;
-  --ts-header-height: 60px;
-  --ts-content-max: 1240px;
+  /* ============================================================================
+     SHADOWS & ELEVATION
+     ============================================================================ */
+
+  --ts-shadow-none: none;
+  --ts-shadow-xs: 0 1px 2px rgba(13, 27, 50, 0.04);
+  --ts-shadow-sm: 0 1px 3px rgba(13, 27, 50, 0.06), 0 1px 2px rgba(13, 27, 50, 0.04);
+  --ts-shadow-md: 0 4px 12px rgba(13, 27, 50, 0.08), 0 1px 3px rgba(13, 27, 50, 0.05);
+  --ts-shadow-lg: 0 10px 25px rgba(13, 27, 50, 0.1), 0 4px 10px rgba(13, 27, 50, 0.04);
+  --ts-shadow-xl: 0 20px 40px rgba(13, 27, 50, 0.12), 0 8px 16px rgba(13, 27, 50, 0.06);
+  --ts-shadow-2xl: 0 25px 50px rgba(13, 27, 50, 0.15), 0 12px 24px rgba(13, 27, 50, 0.08);
+
+  /* Colored shadows for branded elements */
+  --ts-shadow-blue: 0 4px 14px rgba(38, 132, 232, 0.25);
+  --ts-shadow-blue-lg: 0 8px 24px rgba(38, 132, 232, 0.3);
+  --ts-shadow-success: 0 4px 14px rgba(22, 163, 74, 0.25);
+  --ts-shadow-warning: 0 4px 14px rgba(217, 119, 6, 0.25);
+  --ts-shadow-danger: 0 4px 14px rgba(220, 38, 38, 0.25);
+
+  /* ============================================================================
+     LAYOUT DIMENSIONS
+     ============================================================================ */
+
+  --ts-sidebar-width: 260px;
+  --ts-sidebar-collapsed: 72px;
+  --ts-header-height: 64px;
+  --ts-content-max: 1440px;
+  --ts-content-padding: var(--ts-space-6);
+
+  /* ============================================================================
+     Z-INDEX LAYERS
+     ============================================================================ */
+
+  --ts-z-dropdown: 100;
+  --ts-z-sticky: 200;
+  --ts-z-modal-backdrop: 400;
+  --ts-z-modal: 500;
+  --ts-z-popover: 600;
+  --ts-z-tooltip: 700;
+  --ts-z-toast: 800;
+
+  /* ============================================================================
+     TRANSITIONS & MOTION
+     ============================================================================ */
+
+  --ts-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ts-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ts-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ts-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --ts-duration-instant: 75ms;
+  --ts-duration-fast: 150ms;
+  --ts-duration-normal: 200ms;
+  --ts-duration-slow: 300ms;
+  --ts-duration-slower: 500ms;
+
+  /* ============================================================================
+     BREAKPOINTS
+     ============================================================================ */
+
+  --ts-bp-sm: 640px;
+  --ts-bp-md: 768px;
+  --ts-bp-lg: 1024px;
+  --ts-bp-xl: 1280px;
+  --ts-bp-2xl: 1536px;
+}
+
+/* =============================================================================
+   DARK MODE SUPPORT (Future-ready)
+   ============================================================================= */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ts-bg: #0D1B32;
+    --ts-bg-elevated: #142B4A;
+    --ts-surface: #17375E;
+    --ts-surface-hover: #1E3E6B;
+    --ts-surface-pressed: #255C8E;
+    --ts-border: #2D4A6B;
+    --ts-border-strong: #3D5A7E;
+    --ts-ink: #F1F5F9;
+    --ts-ink-heading: #F8FAFC;
+    --ts-ink-subtle: #94A3B8;
+    --ts-ink-muted: #94A3B8;
+    --ts-ink-faint: #64748B;
+    --ts-surface-hover: #1E3E6B;
+  }
+}
+
+/* =============================================================================
+   REDUCED MOTION SUPPORT
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
