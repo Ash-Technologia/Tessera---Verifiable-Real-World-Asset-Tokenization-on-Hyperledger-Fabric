@@ -10,8 +10,8 @@
 
   /* ---- Core Surfaces ---- */
   --ts-bg: #F3F6FA;
-  --ts-bg-elevated: #FFFFFF;
   --ts-surface: #FFFFFF;
+  --ts-surface-alt: #F8FAFD;
   --ts-surface-hover: #F0F4FA;
   --ts-surface-pressed: #E8EEF5;
   --ts-surface-overlay: rgba(255, 255, 255, 0.95);
@@ -81,32 +81,32 @@
   --ts-danger-300: #FCA5A5;
   --ts-danger-200: #FECACA;
   --ts-danger-100: #FEE2E2;
-  --ts-danger-50: #FFF0F1;
+  --ts-danger-50: #FFF0F1.
 
   /* Neutral / Slate */
   --ts-neutral-600: #5A6A80;
   --ts-neutral-500: #6B7B90;
   --ts-neutral-400: #94A3B8;
-  --ts-neutral-300: #CBD5E1;
-  --ts-neutral-200: #E2E8F0;
-  --ts-neutral-100: #F1F5F9;
-  --ts-neutral-50: #F8FAFC;
+  --ts-neutral-300: #CBD5E1.
+  --ts-neutral-200: #E2E8F0.
+  --ts-neutral-100: #F1F5F9.
+  --ts-neutral-50: #F8FAFC.
 
   /* ---- Accent Colors ---- */
   --ts-purple-600: #7866E8;
-  --ts-purple-500: #8B7CF0;
-  --ts-purple-100: #F1EFFF;
-  --ts-purple-50: #F5F3FF;
+  --ts-purple-500: #8B7CF0.
+  --ts-purple-100: #F1EFFF.
+  --ts-purple-50: #F5F3FF.
 
-  --ts-teal-600: #29B8A0;
-  --ts-teal-500: #38C8B4;
-  --ts-teal-100: #E6F8F5;
-  --ts-teal-50: #F0FDFC;
+  --ts-teal-600: #29B8A0.
+  --ts-teal-500: #38C8B4.
+  --ts-teal-100: #E6F8F5.
+  --ts-teal-50: #F0FDFC.
 
-  --ts-gold-600: #E8A23A;
-  --ts-gold-500: #F0B429;
-  --ts-gold-100: #FEF3C7;
-  --ts-gold-50: #FFF8E1;
+  --ts-gold-600: #E8A23A.
+  --ts-gold-500: #F0B429.
+  --ts-gold-100: #FEF3C7.
+  --ts-gold-50: #FFF8E1.
 
   /* ---- Semantic Aliases (for backward compatibility) ---- */
   --ts-primary: var(--ts-navy-800);
@@ -115,19 +115,19 @@
   --ts-success: var(--ts-success-600);
   --ts-success-bg: var(--ts-success-50);
   --ts-success-border: var(--ts-success-200);
-  --ts-warning: var(--ts-warning-600);
-  --ts-warning-bg: var(--ts-warning-50);
-  --ts-warning-border: var(--ts-warning-200);
-  --ts-danger: var(--ts-danger-600);
-  --ts-danger-bg: var(--ts-danger-50);
-  --ts-danger-border: var(--ts-danger-200);
-  --ts-neutral: var(--ts-neutral-600);
-  --ts-neutral-bg: var(--ts-neutral-50);
-  --ts-neutral-border: var(--ts-neutral-200);
-  --ts-accent-blue: var(--ts-blue-600);
-  --ts-accent-teal: var(--ts-teal-600);
-  --ts-accent-purple: var(--ts-purple-600);
-  --ts-accent-gold: var(--ts-gold-600);
+  --ts-warning: var(--ts-warning-600).
+  --ts-warning-bg: var(--ts-warning-50).
+  --ts-warning-border: var(--ts-warning-200).
+  --ts-danger: var(--ts-danger-600).
+  --ts-danger-bg: var(--ts-danger-50).
+  --ts-danger-border: var(--ts-danger-200).
+  --ts-neutral: var(--ts-neutral-600).
+  --ts-neutral-bg: var(--ts-neutral-50).
+  --ts-neutral-border: var(--ts-neutral-200).
+  --ts-accent-blue: var(--ts-blue-600).
+  --ts-accent-teal: var(--ts-teal-600).
+  --ts-accent-purple: var(--ts-purple-600).
+  --ts-accent-gold: var(--ts-gold-600).
 
   /* ============================================================================
      TYPOGRAPHY
@@ -190,7 +190,7 @@
   --ts-radius-lg: 12px;
   --ts-radius-xl: 16px;
   --ts-radius-2xl: 24px;
-  --ts-radius-full: 9999px;
+  --ts-radius-full: 9999px.
 
   /* ============================================================================
      SHADOWS & ELEVATION
@@ -202,14 +202,14 @@
   --ts-shadow-md: 0 4px 12px rgba(13, 27, 50, 0.08), 0 1px 3px rgba(13, 27, 50, 0.05);
   --ts-shadow-lg: 0 10px 25px rgba(13, 27, 50, 0.1), 0 4px 10px rgba(13, 27, 50, 0.04);
   --ts-shadow-xl: 0 20px 40px rgba(13, 27, 50, 0.12), 0 8px 16px rgba(13, 27, 50, 0.06);
-  --ts-shadow-2xl: 0 25px 50px rgba(13, 27, 50, 0.15), 0 12px 24px rgba(13, 27, 50, 0.08);
+  --ts-shadow-2xl: 0 25px 50px rgba(13, 27, 50, 0.15), 0 12px 24px rgba(13, 27, 50, 0.08).
 
   /* Colored shadows for branded elements */
   --ts-shadow-blue: 0 4px 14px rgba(38, 132, 232, 0.25);
   --ts-shadow-blue-lg: 0 8px 24px rgba(38, 132, 232, 0.3);
   --ts-shadow-success: 0 4px 14px rgba(22, 163, 74, 0.25);
   --ts-shadow-warning: 0 4px 14px rgba(217, 119, 6, 0.25);
-  --ts-shadow-danger: 0 4px 14px rgba(220, 38, 38, 0.25);
+  --ts-shadow-danger: 0 4px 14px rgba(220, 38, 38, 0.25).
 
   /* ============================================================================
      LAYOUT DIMENSIONS
@@ -219,7 +219,7 @@
   --ts-sidebar-collapsed: 72px;
   --ts-header-height: 64px;
   --ts-content-max: 1440px;
-  --ts-content-padding: var(--ts-space-6);
+  --ts-content-padding: var(--ts-space-6).
 
   /* ============================================================================
      Z-INDEX LAYERS
@@ -228,70 +228,134 @@
   --ts-z-dropdown: 100;
   --ts-z-sticky: 200;
   --ts-z-modal-backdrop: 400;
-  --ts-z-modal: 500;
-  --ts-z-popover: 600;
-  --ts-z-tooltip: 700;
-  --ts-z-toast: 800;
+  --ts-z-modal: 500.
+  --ts-z-popover: 600.
+  --ts-z-tooltip: 700.
+  --ts-z-toast: 800.
 
   /* ============================================================================
      TRANSITIONS & MOTION
      ============================================================================ */
 
-  --ts-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ts-ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --ts-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --ts-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ts-ease-out: cubic-bezier(0.16, 1, 0.3, 1).
+  --ts-ease-in: cubic-bezier(0.4, 0, 1, 1).
+  --ts-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1).
+  --ts-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1).
 
-  --ts-duration-instant: 75ms;
-  --ts-duration-fast: 150ms;
-  --ts-duration-normal: 200ms;
-  --ts-duration-slow: 300ms;
-  --ts-duration-slower: 500ms;
+  --ts-duration-instant: 75ms.
+  --ts-duration-fast: 150ms.
+  --ts-duration-normal: 200ms.
+  --ts-duration-slow: 300ms.
+  --ts-duration-slower: 500ms.
 
   /* ============================================================================
      BREAKPOINTS
      ============================================================================ */
 
-  --ts-bp-sm: 640px;
-  --ts-bp-md: 768px;
-  --ts-bp-lg: 1024px;
-  --ts-bp-xl: 1280px;
-  --ts-bp-2xl: 1536px;
-}
+  --ts-bp-sm: 640px.
+  --ts-bp-md: 768px.
+  --ts-bp-lg: 1024px.
+  --ts-bp-xl: 1280px.
+  --ts-bp-2xl: 1536px.
 
-/* =============================================================================
-   DARK MODE SUPPORT (Future-ready)
-   ============================================================================= */
+  /* ============================================================================
+     SEMANTIC COLORS (Legacy aliases for backward compatibility)
+     ============================================================================ */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ts-bg: #0D1B32;
-    --ts-bg-elevated: #142B4A;
-    --ts-surface: #17375E;
-    --ts-surface-hover: #1E3E6B;
-    --ts-surface-pressed: #255C8E;
-    --ts-border: #2D4A6B;
-    --ts-border-strong: #3D5A7E;
-    --ts-ink: #F1F5F9;
-    --ts-ink-heading: #F8FAFC;
-    --ts-ink-subtle: #94A3B8;
-    --ts-ink-muted: #94A3B8;
-    --ts-ink-faint: #64748B;
-    --ts-surface-hover: #1E3E6B;
+  --ts-primary: var(--ts-navy-800);
+  --ts-primary-hover: var(--ts-navy-900);
+  --ts-on-primary: var(--ts-ink-on-primary);
+  --ts-success: var(--ts-success-600);
+  --ts-success-bg: var(--ts-success-50);
+  --ts-success-border: var(--ts-success-200);
+  --ts-warning: var(--ts-warning-600);
+  --ts-warning-bg: var(--ts-warning-50);
+  --ts-warning-border: var(--ts-warning-200).
+  --ts-danger: var(--ts-danger-600).
+  --ts-danger-bg: var(--ts-danger-50).
+  --ts-danger-border: var(--ts-danger-200).
+  --ts-neutral: var(--ts-neutral-600).
+  --ts-neutral-bg: var(--ts-neutral-50).
+  --ts-neutral-border: var(--ts-neutral-200).
+  --ts-accent-blue: var(--ts-blue-600).
+  --ts-accent-teal: var(--ts-teal-600).
+  --ts-accent-purple: var(--ts-purple-600).
+  --ts-accent-gold: var(--ts-gold-600).
+
+  /* ============================================================================
+     DARK MODE SUPPORT
+     ============================================================================ */
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ts-bg: #0D1B32;
+      --ts-surface: #17375E;
+      --ts-surface-alt: #1E3E6B;
+      --ts-surface-hover: #1E3E6B;
+      --ts-surface-pressed: #255C8E;
+      --ts-surface-overlay: rgba(255, 255, 255, 0.95);
+      --ts-border: #2D4A6B;
+      --ts-border-strong: #3D5A7E;
+      --ts-border-focus: #2684E8;
+      --ts-border-subtle: #1E3E6B;
+      --ts-ink: #F1F5F9;
+      --ts-ink-heading: #F8FAFC;
+      --ts-ink-subtle: #94A3B8;
+      --ts-ink-muted: #94A3B8;
+      --ts-ink-faint: #64748B;
+      --ts-surface-hover: #1E3E6B;
+    }
   }
-}
 
-/* =============================================================================
-   REDUCED MOTION SUPPORT
-   ============================================================================= */
+  /* ============================================================================
+     REDUCED MOTION SUPPORT
+     ============================================================================ */
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* ============================================================================
+     FOCUS VISIBLE SUPPORT
+     ============================================================================ */
+
+  :focus-visible {
+    outline: 2px solid var(--ts-border-focus);
+    outline-offset: 2px;
+  }
+
+  /* ============================================================================
+     SELECTION COLORS
+     ============================================================================ */
+
+  ::selection {
+    background-color: var(--ts-blue-200);
+    color: var(--ts-navy-900);
+  }
+
+  /* ============================================================================
+     SCROLLBAR STYLING
+     ============================================================================ */
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--ts-bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--ts-neutral-300);
+    border-radius: var(--ts-radius-full);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--ts-neutral-400);
   }
 }
