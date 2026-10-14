@@ -696,129 +696,76 @@ export function TransferWorkspace() {
               )}
             </Card>
           </div>
-
-          {/* Authoritative Transfer History */}
-          <Card
-            title={`Committed Transfer History (${transfers.length} ${transfers.length === 1 ? 'Event' : 'Events'})`}
-            actions={
-              <Button size="sm" variant="secondary" onClick={() => loadData(true)} disabled={refreshing}>
-                {refreshing ? 'Refreshing...' : '↻ Refresh History'}
-              </Button>
-            }
-          >
-            <Table
-              columns={[
-                {
-                  key: 'transferId',
-                  header: 'Transfer Identifier',
-                  render: (row) => <span className="ts-mono" style={{ fontWeight: 600 }}>{row.transferId || '—'}</span>,
-                },
-                {
-                  key: 'fromOwnerId',
-                  header: 'Sender (From)',
-                  render: (row) => (
-                    <div>
-                      <span className="ts-mono">{row.fromOwnerId}</span>
-                      <div className="ts-metadata">{row.fromOwnerMSP}</div>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'toOwnerId',
-                  header: 'Recipient (To)',
-                  render: (row) => (
-                    <div>
-                      <span className="ts-mono">{row.toOwnerId}</span>
-                      <div className="ts-metadata">{row.toOwnerMSP}</div>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'amount',
-                  header: 'Quantity',
-                  align: 'right',
-                  render: (row) => (
-                    <span className="ts-numeric" style={{ fontWeight: 700 }}>
-                      {formatAmount(row.amount)}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'status',
-                  header: 'Outcome',
-                  render: (row) => <StatusBadge status={row.status || 'COMPLETED'} />,
-                },
-                {
-                  key: 'reason',
-                  header: 'Reason',
-                  render: (row) => <span>{row.reason || '—'}</span>,
-                },
-                {
-                  key: 'timestamp',
-                  header: 'Recorded On-Chain',
-                  render: (row) => <span className="ts-metadata">{formatTimestamp(row.timestamp)}</span>,
-                },
-              ]}
-              rows={transfers}
-              rowKey={(row, i) => row.transferId || `xfr-${i}`}
-              emptyMessage="No transfer transactions recorded on-chain yet for this token."
-            />
-          </Card>
         </div>
       )}
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <Modal
-          title="Confirm Irreversible Ledger Transfer"
-          onClose={() => {
-            if (!executing) setShowConfirmModal(false);
-          }}
-          closeLabel="Cancel"
-          actions={
-            <Button
-              variant="danger"
-              disabled={executing}
-              onClick={handleExecuteTransfer}
-            >
-              {executing ? 'Submitting to Fabric...' : 'Execute On-Chain Transfer'}
-            </Button>
-          }
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ padding: '0.8rem 1rem', background: '#fff7ed', borderRadius: 'var(--ts-radius-sm)', border: '1px solid #fed7aa', color: '#9a3412', fontSize: 'var(--ts-text-sm)' }}>
-              <strong>Permanent Ledger Action:</strong> This operation writes an irreversible ownership transfer transaction to Hyperledger Fabric channel <code className="ts-mono">tessera-channel</code>. Once committed, balances are debited and credited permanently.
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: 'var(--ts-text-sm)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', borderBottom: '1px solid var(--ts-border)' }}>
-                <span className="ts-metadata">Token ID:</span>
-                <span className="ts-mono">{token?.tokenId}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', borderBottom: '1px solid var(--ts-border)' }}>
-                <span className="ts-metadata">Sender (From):</span>
-                <span className="ts-mono">{fromOwnerId} ({fromOwnerMSP})</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', borderBottom: '1px solid var(--ts-border)' }}>
-                <span className="ts-metadata">Recipient (To):</span>
-                <span className="ts-mono">{toOwnerId} ({toOwnerMSP})</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', borderBottom: '1px solid var(--ts-border)' }}>
-                <span className="ts-metadata">Transfer Quantity:</span>
-                <span className="ts-numeric"><strong>{parsedAmount}</strong> tokens</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0' }}>
-                <span className="ts-metadata">Reason:</span>
-                <span>{reason || 'Transfer'}</span>
-              </div>
-            </div>
-
-            <div className="ts-metadata" style={{ fontSize: 'var(--ts-text-xs)' }}>
-              Preflight policy evaluation: <Badge tone="green">APPROVED (ALLOW)</Badge>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* Authoritative Transfer History */}
+      <Card
+        title={`Committed Transfer History (${transfers.length} ${transfers.length === 1 ? 'Event' : 'Events'})`}
+        actions={
+          <Button size="sm" variant="secondary" onClick={() => loadData(true)} disabled={refreshing}>
+            {refreshing ? 'Refreshing...' : '↻ Refresh History'}
+          </Button>
+        }
+      >
+        <Table
+          columns={[
+            {
+              key: 'transferId',
+              header: 'Transfer Identifier',
+              render: (row) => <span className="ts-mono" style={{ fontWeight: 600 }}>{row.transferId || '—'}</span>,
+            },
+            {
+              key: 'fromOwnerId',
+              header: 'Sender (From)',
+              render: (row) => (
+                <div>
+                  <span className="ts-mono">{row.fromOwnerId}</span>
+                  <div className="ts-metadata">{row.fromOwnerMSP}</div>
+                </div>
+              ),
+            },
+            {
+              key: 'toOwnerId',
+              header: 'Recipient (To)',
+              render: (row) => (
+                <div>
+                  <span className="ts-mono">{row.toOwnerId}</span>
+                  <div className="ts-metadata">{row.toOwnerMSP}</div>
+                </div>
+              ),
+            },
+            {
+              key: 'amount',
+              header: 'Quantity',
+              align: 'right',
+              render: (row) => (
+                <span className="ts-numeric" style={{ fontWeight: 700 }}>
+                  {formatAmount(row.amount)}
+                </span>
+              ),
+            },
+            {
+              key: 'status',
+              header: 'Outcome',
+              render: (row) => <StatusBadge status={row.status || 'COMPLETED'} />,
+            },
+            {
+              key: 'reason',
+              header: 'Reason',
+              render: (row) => <span>{row.reason || '—'}</span>,
+            },
+            {
+              key: 'timestamp',
+              header: 'Recorded On-Chain',
+              render: (row) => <span className="ts-metadata">{formatTimestamp(row.timestamp)}</span>,
+            },
+          ]}
+          rows={transfers}
+          rowKey={(row, i) => row.transferId || `xfr-${i}`}
+          emptyMessage="No transfer transactions recorded on-chain yet for this token."
+        />
+      </Card>
     </div>
   );
 }

@@ -241,7 +241,7 @@
   margin: 0;
   font-size: var(--ts-text-sm);
   color: var(--ts-ink-muted);
-  overflow-wrap: anywhere.
+  overflow-wrap: anywhere;
 }
 
 .ts-spinner {
@@ -250,7 +250,7 @@
   border-radius: 50%;
   border: 3px solid var(--ts-border);
   border-top-color: var(--ts-primary);
-  animation: ts-spin 0.8s linear infinite.
+  animation: ts-spin 0.8s linear infinite;
 }
 
 @keyframes ts-spin {
@@ -263,132 +263,132 @@
   display: flex;
   gap: 0.25rem;
   border-bottom: 2px solid var(--ts-border);
-  margin-bottom: 1rem.
+  margin-bottom: 1rem;
 }
 
 .ts-tab {
   font: inherit;
   font-size: var(--ts-text-sm);
-  font-weight: 600.
-  color: var(--ts-ink-muted).
-  background: none.
-  border: none.
-  padding: 0.55rem 0.9rem.
-  cursor: pointer.
-  border-bottom: 2px solid transparent.
-  margin-bottom: -2px.
+  font-weight: 600;
+  color: var(--ts-ink-muted);
+  background: none;
+  border: none;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
 }
 
 .ts-tab.is-active {
-  color: var(--ts-primary).
-  border-bottom-color: var(--ts-primary).
+  color: var(--ts-primary);
+  border-bottom-color: var(--ts-primary);
 }
 
 .ts-modal-backdrop {
   position: fixed;
-  inset: 0.
-  background: rgba(16, 28, 51, 0.45).
-  display: flex.
-  align-items: center.
-  justify-content: center.
-  z-index: 50.
-  padding: 1rem.
+  inset: 0;
+  background: rgba(16, 28, 51, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
 }
 
 .ts-modal {
-  background: var(--ts-surface).
-  border-radius: var(--ts-radius-lg).
-  box-shadow: var(--ts-shadow-md).
-  max-width: 560px.
-  width: 100%.
-  padding: 1.25rem 1.35rem.
+  background: var(--ts-surface);
+  border-radius: var(--ts-radius-lg);
+  box-shadow: var(--ts-shadow-md);
+  max-width: 560px;
+  width: 100%;
+  padding: 1.25rem 1.35rem;
 }
 
 .ts-modal-title {
-  margin: 0 0 0.75rem.
-  font-size: var(--ts-text-lg).
+  margin: 0 0 0.75rem;
+  font-size: var(--ts-text-lg);
 }
 
 .ts-modal-actions {
-  display: flex.
-  justify-content: flex-end.
-  gap: 0.6rem.
-  margin-top: 1.1rem.
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
 }
 
 .ts-timeline {
-  list-style: none.
-  margin: 0.
-  padding: 0.
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .ts-timeline-item {
-  position: relative.
-  padding: 0 0 1rem 1.4rem.
-  border-left: 2px solid var(--ts-border-strong).
-  margin-left: 0.35rem.
+  position: relative;
+  padding: 0 0 1rem 1.4rem;
+  border-left: 2px solid var(--ts-border-strong);
+  margin-left: 0.35rem;
 }
 
 .ts-timeline-item:last-child {
-  padding-bottom: 0.
+  padding-bottom: 0;
 }
 
 .ts-timeline-dot {
-  position: absolute.
-  left: -7px.
-  top: 2px.
-  width: 12px.
-  height: 12px.
-  border-radius: 50%.
-  background: var(--ts-primary).
-  border: 2px solid var(--ts-surface).
+  position: absolute;
+  left: -7px;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ts-primary);
+  border: 2px solid var(--ts-surface);
 }
 
 .ts-hash {
-  display: inline-flex.
-  align-items: center.
-  gap: 0.45rem.
-  font-family: var(--ts-font-mono).
-  font-size: 0.82em.
-  background: var(--ts-surface-alt).
-  border: 1px solid var(--ts-border).
-  border-radius: var(--ts-radius-sm).
-  padding: 0.15rem 0.45rem.
-  overflow-wrap: anywhere.
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--ts-font-mono);
+  font-size: 0.82em;
+  background: var(--ts-surface-alt);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-sm);
+  padding: 0.15rem 0.45rem;
+  overflow-wrap: anywhere;
 }
 
 .ts-hash-copy {
-  font-size: var(--ts-text-xs).
-  padding: 0.1rem 0.4rem.
+  font-size: var(--ts-text-xs);
+  padding: 0.1rem 0.4rem;
 }
 
 .ts-kbd-hint {
-  font-size: var(--ts-text-xs).
-  color: var(--ts-ink-faint).
+  font-size: var(--ts-text-xs);
+  color: var(--ts-ink-faint);
 }
 
 .ts-alert {
-  border: 1px solid var(--ts-border-strong).
-  border-left: 4px solid var(--ts-neutral).
-  background: var(--ts-surface).
-  border-radius: var(--ts-radius-sm).
-  padding: 0.7rem 0.9rem.
-  font-size: var(--ts-text-sm).
+  border: 1px solid var(--ts-border-strong);
+  border-left: 4px solid var(--ts-neutral);
+  background: var(--ts-surface);
+  border-radius: var(--ts-radius-sm);
+  padding: 0.7rem 0.9rem;
+  font-size: var(--ts-text-sm);
 }
 
 .ts-alert-amber {
-  border-left-color: var(--ts-warning).
-  background: var(--ts-warning-bg).
+  border-left-color: var(--ts-warning);
+  background: var(--ts-warning-bg);
 }
 
 .ts-alert-red {
-  border-left-color: var(--ts-danger).
-  background: var(--ts-danger-bg).
+  border-left-color: var(--ts-danger);
+  background: var(--ts-danger-bg);
 }
 
 .ts-alert-green {
-  border-left-color: var(--ts-success).
-  background: var(--ts-success-bg).
+  border-left-color: var(--ts-success);
+  background: var(--ts-success-bg);
 }
 
 /* =============================================================================
@@ -398,572 +398,572 @@
 /* 1. Dashboard Greeting Banner */
 .ts-greeting-banner {
   background: linear-gradient(135deg, #FFFFFF 0%, #F5F8FC 60%, #EBF3FC 100%);
-  border: 1px solid var(--ts-border).
-  border-radius: var(--ts-radius-lg).
-  padding: 1.5rem 1.75rem.
-  margin-bottom: 1.25rem.
-  position: relative.
-  overflow: hidden.
-  display: flex.
-  justify-content: space-between.
-  align-items: center.
-  box-shadow: var(--ts-shadow-xs).
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-lg);
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--ts-shadow-xs);
 }
 
 .ts-greeting-left {
-  position: relative.
-  z-index: 2.
-  max-width: 58%.
+  position: relative;
+  z-index: 2;
+  max-width: 58%;
 }
 
 .ts-greeting-title {
-  font-size: 1.5rem.
-  font-weight: 700.
-  color: var(--ts-navy-deep).
-  margin: 0 0 0.35rem 0.
-  letter-spacing: -0.01em.
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ts-navy-deep);
+  margin: 0 0 0.35rem 0;
+  letter-spacing: -0.01em;
 }
 
 .ts-greeting-sub {
-  font-size: 0.875rem.
-  color: var(--ts-ink-muted).
-  margin: 0.
+  font-size: 0.875rem;
+  color: var(--ts-ink-muted);
+  margin: 0;
 }
 
 .ts-greeting-bg-art {
-  position: absolute.
-  right: 0.
-  top: 0.
-  bottom: 0.
-  width: 50%.
-  background-image: url('/images/dashboard_mountains.jpg').
-  background-size: cover.
-  background-position: right center.
-  opacity: 0.9.
-  -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%).
-  mask-image: linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%).
-  pointer-events: none.
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background-image: url('/images/dashboard_mountains.jpg');
+  background-size: cover;
+  background-position: right center;
+  opacity: 0.9;
+  -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to left, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%);
+  pointer-events: none;
 }
 
 .ts-greeting-tag {
-  position: absolute.
-  right: 1.5rem.
-  bottom: 1.15rem.
-  font-size: 0.6875rem.
-  font-weight: 800.
-  letter-spacing: 0.12em.
-  color: var(--ts-navy-primary).
-  text-transform: uppercase.
-  z-index: 2.
-  text-align: right.
-  line-height: 1.3.
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.15rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--ts-navy-primary);
+  text-transform: uppercase;
+  z-index: 2;
+  text-align: right;
+  line-height: 1.3;
 }
 
 /* 2. 5 KPI Cards Row */
 .ts-kpi-row {
-  display: grid.
-  grid-template-columns: repeat(5, 1fr).
-  gap: 0.875rem.
-  margin-bottom: 1.25rem.
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.875rem;
+  margin-bottom: 1.25rem;
 }
 
 .ts-kpi-card {
-  background: var(--ts-surface).
-  border: 1px solid var(--ts-border).
-  border-radius: var(--ts-radius-lg).
-  padding: 1rem.
-  display: flex.
-  flex-direction: column.
-  gap: 0.35rem.
-  transition: all var(--ts-transition-fast).
-  box-shadow: var(--ts-shadow-xs).
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-lg);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: all var(--ts-transition-fast);
+  box-shadow: var(--ts-shadow-xs);
 }
 
 .ts-kpi-card:hover {
-  border-color: var(--ts-border-strong).
-  box-shadow: var(--ts-shadow-sm).
+  border-color: var(--ts-border-strong);
+  box-shadow: var(--ts-shadow-sm);
 }
 
 .ts-kpi-icon-box {
-  width: 34px.
-  height: 34px.
-  border-radius: var(--ts-radius-md).
-  display: flex.
-  align-items: center.
-  justify-content: center.
-  margin-bottom: 0.35rem.
+  width: 34px;
+  height: 34px;
+  border-radius: var(--ts-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.35rem;
 }
 
 .ts-kpi-label {
-  font-size: 0.75rem.
-  font-weight: 600.
-  color: var(--ts-ink-muted).
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ts-ink-muted);
 }
 
 .ts-kpi-val {
-  font-size: 1.625rem.
-  font-weight: 700.
-  color: var(--ts-ink-heading).
-  line-height: 1.1.
-  font-variant-numeric: tabular-nums.
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--ts-ink-heading);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .ts-kpi-meta {
-  font-size: 0.6875rem.
-  color: var(--ts-ink-muted).
-  display: flex.
-  align-items: center.
-  gap: 0.25rem.
-  margin-top: 0.15rem.
+  font-size: 0.6875rem;
+  color: var(--ts-ink-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.15rem;
 }
 
 .ts-kpi-trend-badge {
-  display: inline-flex.
-  align-items: center.
-  font-weight: 600.
-  color: var(--ts-success).
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  color: var(--ts-success);
 }
 
 /* 3. Dashboard Panels Layout (3 Columns) */
 .ts-panels-row {
-  display: grid.
-  grid-template-columns: 1.05fr 1fr 1.2fr.
-  gap: 1rem.
-  margin-bottom: 1.25rem.
+  display: grid;
+  grid-template-columns: 1.05fr 1fr 1.2fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .ts-panel-card {
-  background: var(--ts-surface).
-  border: 1px solid var(--ts-border).
-  border-radius: var(--ts-radius-lg).
-  padding: 1.25rem.
-  display: flex.
-  flex-direction: column.
-  box-shadow: var(--ts-shadow-xs).
-  min-height: 320px.
+  background: var(--ts-surface);
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--ts-shadow-xs);
+  min-height: 320px;
 }
 
 .ts-panel-header {
-  display: flex.
-  align-items: center.
-  justify-content: space-between.
-  margin-bottom: 1.25rem.
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
 }
 
 .ts-panel-title {
-  font-size: 0.9375rem.
-  font-weight: 700.
-  color: var(--ts-ink-heading).
-  margin: 0.
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ts-ink-heading);
+  margin: 0;
 }
 
 .ts-panel-action {
-  font-size: 0.75rem.
-  font-weight: 600.
-  color: var(--ts-blue-primary).
-  text-decoration: none.
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ts-blue-primary);
+  text-decoration: none;
 }
 
 .ts-panel-action:hover {
-  text-decoration: underline.
+  text-decoration: underline;
 }
 
 /* Donut Chart Presentation */
 .ts-donut-container {
-  display: flex.
-  align-items: center.
-  justify-content: space-around.
-  gap: 1rem.
-  flex: 1.
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 1rem;
+  flex: 1;
 }
 
 .ts-donut-svg-wrap {
-  position: relative.
-  width: 140px.
-  height: 140px.
+  position: relative;
+  width: 140px;
+  height: 140px;
 }
 
 .ts-donut-center {
-  position: absolute.
-  inset: 0.
-  display: flex.
-  flex-direction: column.
-  align-items: center.
-  justify-content: center.
-  pointer-events: none.
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
 
 .ts-donut-center-val {
-  font-size: 1.5rem.
-  font-weight: 800.
-  color: var(--ts-ink-heading).
-  line-height: 1.
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ts-ink-heading);
+  line-height: 1;
 }
 
 .ts-donut-center-lbl {
-  font-size: 0.6875rem.
-  font-weight: 600.
-  color: var(--ts-ink-muted).
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--ts-ink-muted);
 }
 
 .ts-donut-legend {
-  display: flex.
-  flex-direction: column.
-  gap: 0.5rem.
-  font-size: 0.75rem.
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.75rem;
 }
 
 .ts-legend-item {
-  display: flex.
-  align-items: center.
-  gap: 0.5rem.
-  color: var(--ts-ink).
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ts-ink);
 }
 
 .ts-legend-dot {
-  width: 8px.
-  height: 8px.
-  border-radius: 50%.
-  flex-shrink: 0.
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .ts-legend-name {
-  color: var(--ts-ink).
-  font-weight: 500.
-  min-width: 65px.
+  color: var(--ts-ink);
+  font-weight: 500;
+  min-width: 65px;
 }
 
 .ts-legend-val {
-  color: var(--ts-ink-muted).
-  font-variant-numeric: tabular-nums.
-  margin-left: auto.
+  color: var(--ts-ink-muted);
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
 }
 
 /* Vertical Bar Chart Presentation */
 .ts-bars-container {
-  display: flex.
-  align-items: flex-end.
-  justify-content: space-between.
-  height: 180px.
-  padding: 1rem 0.5rem 0.
-  gap: 0.75rem.
-  border-bottom: 1px solid var(--ts-border).
-  margin-bottom: 0.75rem.
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 180px;
+  padding: 1rem 0.5rem 0;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--ts-border);
+  margin-bottom: 0.75rem;
 }
 
 .ts-bar-col {
-  flex: 1.
-  display: flex.
-  flex-direction: column.
-  align-items: center.
-  height: 100%.
-  justify-content: flex-end.
-  gap: 0.35rem.
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  gap: 0.35rem;
 }
 
 .ts-bar-val {
-  font-size: 0.6875rem.
-  font-weight: 700.
-  color: var(--ts-ink-muted).
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--ts-ink-muted);
 }
 
 .ts-bar-fill {
-  width: 100%.
-  max-width: 36px.
-  border-radius: var(--ts-radius-xs) var(--ts-radius-xs) 0 0.
-  transition: height var(--ts-transition-normal).
-  min-height: 4px.
+  width: 100%;
+  max-width: 36px;
+  border-radius: var(--ts-radius-xs) var(--ts-radius-xs) 0 0;
+  transition: height var(--ts-transition-normal);
+  min-height: 4px;
 }
 
 .ts-bar-lbl {
-  font-size: 0.6875rem.
-  color: var(--ts-ink-muted).
-  text-align: center.
-  margin-top: 0.25rem.
+  font-size: 0.6875rem;
+  color: var(--ts-ink-muted);
+  text-align: center;
+  margin-top: 0.25rem;
 }
 
 /* Recent Activity List */
 .ts-activity-list {
-  display: flex.
-  flex-direction: column.
-  gap: 0.85rem.
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
 }
 
 .ts-activity-item {
-  display: flex.
-  align-items: flex-start.
-  gap: 0.75rem.
-  font-size: 0.78125rem.
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.78125rem;
 }
 
 .ts-activity-icon {
-  width: 28px.
-  height: 28px.
-  border-radius: 50%.
-  display: flex.
-  align-items: center.
-  justify-content: center.
-  flex-shrink: 0.
-  margin-top: 2px.
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .ts-activity-details {
-  flex: 1.
-  line-height: 1.35.
+  flex: 1;
+  line-height: 1.35;
 }
 
 .ts-activity-desc {
-  font-weight: 600.
-  color: var(--ts-ink-heading).
+  font-weight: 600;
+  color: var(--ts-ink-heading);
 }
 
 .ts-activity-sub {
-  font-size: 0.71875rem.
-  color: var(--ts-warning).
-  font-weight: 500.
+  font-size: 0.71875rem;
+  color: var(--ts-warning);
+  font-weight: 500;
 }
 
 .ts-activity-time {
-  font-size: 0.6875rem.
-  color: var(--ts-ink-muted).
-  margin-top: 2px.
+  font-size: 0.6875rem;
+  color: var(--ts-ink-muted);
+  margin-top: 2px;
 }
 
 /* 4. Stepper Component */
 .ts-stepper {
-  display: flex.
-  align-items: center.
-  justify-content: center.
-  gap: 1.5rem.
-  padding: 1rem 0.
-  margin-bottom: 1.5rem.
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1rem 0;
+  margin-bottom: 1.5rem;
 }
 
 .ts-step-item {
-  display: flex.
-  align-items: center.
-  gap: 0.5rem.
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .ts-step-circle {
-  width: 26px.
-  height: 26px.
-  border-radius: 50%.
-  display: flex.
-  align-items: center.
-  justify-content: center.
-  font-size: 0.75rem.
-  font-weight: 700.
-  border: 2px solid var(--ts-border).
-  color: var(--ts-ink-muted).
-  background: #FFFFFF.
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 2px solid var(--ts-border);
+  color: var(--ts-ink-muted);
+  background: #FFFFFF;
 }
 
 .ts-step-item.is-active .ts-step-circle {
-  background: var(--ts-blue-primary).
-  border-color: var(--ts-blue-primary).
-  color: #FFFFFF.
+  background: var(--ts-blue-primary);
+  border-color: var(--ts-blue-primary);
+  color: #FFFFFF;
 }
 
 .ts-step-item.is-completed .ts-step-circle {
-  background: var(--ts-success).
-  border-color: var(--ts-success).
-  color: #FFFFFF.
+  background: var(--ts-success);
+  border-color: var(--ts-success);
+  color: #FFFFFF;
 }
 
 .ts-step-title {
-  font-size: 0.8125rem.
-  font-weight: 600.
-  color: var(--ts-ink-muted).
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ts-ink-muted);
 }
 
 .ts-step-item.is-active .ts-step-title {
-  color: var(--ts-navy-deep).
-  font-weight: 700.
+  color: var(--ts-navy-deep);
+  font-weight: 700;
 }
 
 .ts-step-line {
-  width: 40px.
-  height: 2px.
-  background: var(--ts-border).
+  width: 40px;
+  height: 2px;
+  background: var(--ts-border);
 }
 
 .ts-step-item.is-completed + .ts-step-line {
-  background: var(--ts-success).
+  background: var(--ts-success);
 }
 
 /* 5. Asset Type Selection Cards */
 .ts-asset-type-grid {
-  display: grid.
-  grid-template-columns: repeat(4, 1fr).
-  gap: 1rem.
-  margin: 1rem 0 1.5rem.
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
 }
 
 .ts-type-card {
-  border: 1.5px solid var(--ts-border).
-  border-radius: var(--ts-radius-lg).
-  padding: 1.15rem 1rem.
-  background: #FFFFFF.
-  cursor: pointer.
-  transition: all var(--ts-transition-fast).
-  display: flex.
-  flex-direction: column.
-  align-items: center.
-  text-align: center.
+  border: 1.5px solid var(--ts-border);
+  border-radius: var(--ts-radius-lg);
+  padding: 1.15rem 1rem;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: all var(--ts-transition-fast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .ts-type-card:hover {
-  border-color: var(--ts-blue-primary).
-  box-shadow: var(--ts-shadow-sm).
-  transform: translateY(-2px).
+  border-color: var(--ts-blue-primary);
+  box-shadow: var(--ts-shadow-sm);
+  transform: translateY(-2px);
 }
 
 .ts-type-card.is-selected {
-  border-color: var(--ts-blue-primary).
-  background: var(--ts-blue-soft).
-  box-shadow: 0 0 0 2px var(--ts-blue-primary).
+  border-color: var(--ts-blue-primary);
+  background: var(--ts-blue-soft);
+  box-shadow: 0 0 0 2px var(--ts-blue-primary);
 }
 
 .ts-type-img {
-  width: 100%.
-  height: 95px.
-  object-fit: contain.
-  margin-bottom: 0.75rem.
+  width: 100%;
+  height: 95px;
+  object-fit: contain;
+  margin-bottom: 0.75rem;
 }
 
 .ts-type-title {
-  font-size: 0.9375rem.
-  font-weight: 700.
-  color: var(--ts-ink-heading).
-  margin-bottom: 0.25rem.
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ts-ink-heading);
+  margin-bottom: 0.25rem;
 }
 
 .ts-type-desc {
-  font-size: 0.6875rem.
-  color: var(--ts-ink-muted).
-  line-height: 1.3.
+  font-size: 0.6875rem;
+  color: var(--ts-ink-muted);
+  line-height: 1.3;
 }
 
 /* Template Info Summary */
 .ts-template-info-box {
-  background: #F8FAFD.
-  border: 1px solid var(--ts-border).
-  border-radius: var(--ts-radius-md).
-  padding: 1rem 1.25rem.
-  margin-bottom: 1.5rem.
+  background: #F8FAFD;
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .ts-info-row {
-  display: grid.
-  grid-template-columns: 140px 1fr.
-  gap: 0.75rem.
-  font-size: 0.75rem.
-  padding: 0.4rem 0.
-  border-bottom: 1px solid rgba(227, 234, 242, 0.6).
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(227, 234, 242, 0.6);
 }
 
 .ts-info-row:last-child {
-  border-bottom: none.
+  border-bottom: none;
 }
 
 .ts-info-label {
-  font-weight: 600.
-  color: var(--ts-ink-soft).
+  font-weight: 600;
+  color: var(--ts-ink-soft);
 }
 
 .ts-info-val {
-  color: var(--ts-ink).
-  line-height: 1.4.
+  color: var(--ts-ink);
+  line-height: 1.4;
 }
 
 /* 6. Asset Table Enhancements */
 .ts-table-container {
-  background: #FFFFFF.
-  border: 1px solid var(--ts-border).
-  border-radius: var(--ts-radius-lg).
-  overflow: hidden.
-  box-shadow: var(--ts-shadow-xs).
+  background: #FFFFFF;
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--ts-shadow-xs);
 }
 
 .ts-filter-bar {
-  display: flex.
-  align-items: center.
-  justify-content: space-between.
-  padding: 0.85rem 1rem.
-  border-bottom: 1px solid var(--ts-border).
-  gap: 0.75rem.
-  background: #FFFFFF.
-  flex-wrap: wrap.
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--ts-border);
+  gap: 0.75rem;
+  background: #FFFFFF;
+  flex-wrap: wrap;
 }
 
 .ts-filter-left {
-  display: flex.
-  align-items: center.
-  gap: 0.65rem.
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
 }
 
 .ts-table-thumb {
-  width: 44px.
-  height: 32px.
-  border-radius: var(--ts-radius-xs).
-  object-fit: cover.
-  background: #EEF3F8.
-  border: 1px solid var(--ts-border).
+  width: 44px;
+  height: 32px;
+  border-radius: var(--ts-radius-xs);
+  object-fit: cover;
+  background: #EEF3F8;
+  border: 1px solid var(--ts-border);
 }
 
 .ts-table-actions {
-  display: flex.
-  align-items: center.
-  gap: 0.35rem.
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .ts-icon-btn {
-  width: 28px.
-  height: 28px.
-  border-radius: var(--ts-radius-xs).
-  border: 1px solid var(--ts-border).
-  background: #FFFFFF.
-  display: flex.
-  align-items: center.
-  justify-content: center.
-  color: var(--ts-ink-soft).
-  cursor: pointer.
-  transition: all var(--ts-transition-fast).
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ts-radius-xs);
+  border: 1px solid var(--ts-border);
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ts-ink-soft);
+  cursor: pointer;
+  transition: all var(--ts-transition-fast);
 }
 
 .ts-icon-btn:hover {
-  background: var(--ts-blue-soft).
-  color: var(--ts-blue-primary).
-  border-color: var(--ts-blue-border).
+  background: var(--ts-blue-soft);
+  color: var(--ts-blue-primary);
+  border-color: var(--ts-blue-border);
 }
 
 /* 7. Asset Passport Viewer Modal */
 .ts-passport-overlay {
-  position: fixed.
-  inset: 0.
-  background: rgba(13, 27, 50, 0.6).
-  -webkit-backdrop-filter: blur(3px).
-  backdrop-filter: blur(3px).
-  display: flex.
-  align-items: center.
-  justify-content: center.
-  z-index: 200.
-  padding: 1.5rem.
-  animation: tsFadeIn 150ms ease-out.
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 27, 50, 0.6);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1.5rem;
+  animation: tsFadeIn 150ms ease-out;
 }
 
 .ts-passport-modal {
-  width: 100%.
-  max-width: 820px.
-  max-height: 90vh.
-  background: #FFFFFF.
-  border-radius: var(--ts-radius-xl).
-  box-shadow: var(--ts-shadow-modal).
-  display: flex.
-  flex-direction: column.
-  overflow: hidden.
-  animation: tsScaleIn 180ms cubic-bezier(0.16, 1, 0.3, 1).
+  width: 100%;
+  max-width: 820px;
+  max-height: 90vh;
+  background: #FFFFFF;
+  border-radius: var(--ts-radius-xl);
+  box-shadow: var(--ts-shadow-modal);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: tsScaleIn 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes tsScaleIn {
@@ -972,203 +972,203 @@
 }
 
 .ts-passport-modal-header {
-  padding: 1.15rem 1.5rem.
-  border-bottom: 1px solid var(--ts-border).
-  display: flex.
-  align-items: center.
-  justify-content: space-between.
-  background: #FFFFFF.
+  padding: 1.15rem 1.5rem;
+  border-bottom: 1px solid var(--ts-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
 }
 
 .ts-passport-hero-section {
-  display: grid.
-  grid-template-columns: 1fr 140px.
-  gap: 1.5rem.
-  padding: 1.25rem 1.5rem.
-  background: #F8FAFD.
-  border-bottom: 1px solid var(--ts-border).
-  align-items: center.
+  display: grid;
+  grid-template-columns: 1fr 140px;
+  gap: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: #F8FAFD;
+  border-bottom: 1px solid var(--ts-border);
+  align-items: center;
 }
 
 .ts-passport-badge-verified {
-  display: inline-flex.
-  align-items: center.
-  gap: 0.35rem.
-  background: var(--ts-success-bg).
-  color: var(--ts-success).
-  font-size: 0.75rem.
-  font-weight: 700.
-  padding: 0.25rem 0.65rem.
-  border-radius: var(--ts-radius-pill).
-  margin-bottom: 0.5rem.
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--ts-success-bg);
+  color: var(--ts-success);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--ts-radius-pill);
+  margin-bottom: 0.5rem;
 }
 
 .ts-passport-hero-img {
-  width: 140px.
-  height: 95px.
-  border-radius: var(--ts-radius-md).
-  object-fit: cover.
-  background: #FFFFFF.
-  border: 1px solid var(--ts-border).
-  box-shadow: var(--ts-shadow-xs).
+  width: 140px;
+  height: 95px;
+  border-radius: var(--ts-radius-md);
+  object-fit: cover;
+  background: #FFFFFF;
+  border: 1px solid var(--ts-border);
+  box-shadow: var(--ts-shadow-xs);
 }
 
 .ts-passport-qr-box {
-  display: flex.
-  flex-direction: column.
-  align-items: center.
-  text-align: center.
-  gap: 0.35rem.
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
 }
 
 .ts-passport-qr-sub {
-  font-size: 0.6875rem.
-  color: var(--ts-ink-muted).
-  font-weight: 500.
+  font-size: 0.6875rem;
+  color: var(--ts-ink-muted);
+  font-weight: 500;
 }
 
 .ts-passport-tabs-bar {
-  display: flex.
-  gap: 0.5rem.
-  padding: 0 1.5rem.
-  border-bottom: 1px solid var(--ts-border).
-  background: #FFFFFF.
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--ts-border);
+  background: #FFFFFF;
 }
 
 .ts-passport-tab-btn {
-  padding: 0.75rem 1rem.
-  font-size: 0.8125rem.
-  font-weight: 600.
-  color: var(--ts-ink-muted).
-  border-bottom: 2px solid transparent.
-  cursor: pointer.
-  background: none.
-  border-top: none.
-  border-left: none.
-  border-right: none.
-  transition: all var(--ts-transition-fast).
+  padding: 0.75rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ts-ink-muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  transition: all var(--ts-transition-fast);
 }
 
 .ts-passport-tab-btn:hover {
-  color: var(--ts-navy-primary).
+  color: var(--ts-navy-primary);
 }
 
 .ts-passport-tab-btn.is-active {
-  color: var(--ts-navy-deep).
-  border-bottom-color: var(--ts-blue-primary).
-  font-weight: 700.
+  color: var(--ts-navy-deep);
+  border-bottom-color: var(--ts-blue-primary);
+  font-weight: 700;
 }
 
 .ts-passport-modal-body {
-  padding: 1.25rem 1.5rem.
-  overflow-y: auto.
-  flex: 1.
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .ts-meta-table {
-  width: 100%.
-  border-collapse: collapse.
-  font-size: 0.8125rem.
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
 }
 
 .ts-meta-table td {
-  padding: 0.55rem 0.65rem.
-  border-bottom: 1px solid #F0F4FA.
-  vertical-align: middle.
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid #F0F4FA;
+  vertical-align: middle;
 }
 
 .ts-meta-table td:first-child {
-  color: var(--ts-ink-muted).
-  font-weight: 500.
-  width: 38%.
+  color: var(--ts-ink-muted);
+  font-weight: 500;
+  width: 38%;
 }
 
 .ts-meta-table td:last-child {
-  color: var(--ts-ink-heading).
-  font-weight: 600.
+  color: var(--ts-ink-heading);
+  font-weight: 600;
 }
 
 /* 8. Policy Rules Cards */
 .ts-rules-list {
-  display: flex.
-  flex-direction: column.
-  gap: 0.875rem.
-  margin-top: 1.25rem.
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  margin-top: 1.25rem;
 }
 
 .ts-rule-card {
-  background: #FFFFFF.
-  border: 1px solid var(--ts-border).
-  border-radius: var(--ts-radius-lg).
-  padding: 1.15rem 1.25rem.
-  display: flex.
-  align-items: center.
-  justify-content: space-between.
-  gap: 1.25rem.
-  transition: all var(--ts-transition-fast).
+  background: #FFFFFF;
+  border: 1px solid var(--ts-border);
+  border-radius: var(--ts-radius-lg);
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  transition: all var(--ts-transition-fast);
 }
 
 .ts-rule-card:hover {
-  border-color: var(--ts-border-strong).
-  box-shadow: var(--ts-shadow-xs).
+  border-color: var(--ts-border-strong);
+  box-shadow: var(--ts-shadow-xs);
 }
 
 .ts-rule-left {
-  display: flex.
-  align-items: center.
-  gap: 1rem.
-  flex: 1.
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
 }
 
 .ts-rule-icon-box {
-  width: 38px.
-  height: 38px.
-  border-radius: var(--ts-radius-md).
-  display: flex.
-  align-items: center.
-  justify-content: center.
-  flex-shrink: 0.
+  width: 38px;
+  height: 38px;
+  border-radius: var(--ts-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .ts-rule-title-row {
-  display: flex.
-  align-items: center.
-  gap: 0.5rem.
-  margin-bottom: 0.25rem.
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .ts-rule-title {
-  font-size: 0.9375rem.
-  font-weight: 700.
-  color: var(--ts-ink-heading).
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ts-ink-heading);
 }
 
 .ts-rule-ver {
-  font-size: 0.6875rem.
-  font-weight: 600.
-  color: var(--ts-ink-muted).
-  background: var(--ts-neutral-bg).
-  padding: 1px 6px.
-  border-radius: var(--ts-radius-xs).
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--ts-ink-muted);
+  background: var(--ts-neutral-bg);
+  padding: 1px 6px;
+  border-radius: var(--ts-radius-xs);
 }
 
 .ts-rule-desc {
-  font-size: 0.78125rem.
-  color: var(--ts-ink-soft).
-  line-height: 1.4.
+  font-size: 0.78125rem;
+  color: var(--ts-ink-soft);
+  line-height: 1.4;
 }
 
 .ts-rule-right {
-  display: flex.
-  align-items: center.
-  gap: 1.25rem.
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
 }
 
 .ts-rule-meta {
-  font-size: 0.6875rem.
-  color: var(--ts-ink-muted).
-  text-align: right.
-  line-height: 1.3.
+  font-size: 0.6875rem;
+  color: var(--ts-ink-muted);
+  text-align: right;
+  line-height: 1.3;
 }
 
 /* Responsive adjustments */
@@ -1196,16 +1196,16 @@
   }
 
   .ts-greeting-banner {
-    flex-direction: column.
-    align-items: flex-start.
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .ts-greeting-bg-art {
-    display: none.
+    display: none;
   }
 
   .ts-passport-hero-section {
-    grid-template-columns: 1fr.
+    grid-template-columns: 1fr;
   }
 }
 

@@ -722,7 +722,7 @@ export function TransferRequest() {
                 <div>
                   <span className="ts-mono">{row.fromOwnerId}</span>
                   <div className="ts-metadata">{row.fromOwnerMSP}</div>
-                ),
+                </div>
               ),
             },
             {

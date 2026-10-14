@@ -279,7 +279,7 @@ export function LandingPage() {
         <div className="ts-container">
           <header className="ts-landing-section-header">
             <h2 id="asset-classes-heading" className="ts-landing-section-title">Supported Asset Classes</h2>
-            <p className="ts-landing-section-subtitle">Each asset class has its own schema, evidence requirements, valuation methods, and lifecycle — all configuration-driven.</            </header>
+            <p className="ts-landing-section-subtitle">Each asset class has its own schema, evidence requirements, valuation methods, and lifecycle &mdash; all configuration-driven.</p>          </header>
 
             <div className="ts-asset-class-grid">
               {[
@@ -323,7 +323,6 @@ export function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
       </section>
 
       {/* Footer */}
