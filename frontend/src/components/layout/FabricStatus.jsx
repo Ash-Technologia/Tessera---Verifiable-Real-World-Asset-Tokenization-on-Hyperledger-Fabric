@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '../ui/Badge.jsx';
 import { healthApi } from '../../services/api/index.js';
@@ -8,7 +8,8 @@ import { useAsync } from '../../hooks/useApi.js';
 // Polls every 30s; failures degrade to a badge (never a page crash).
 // Clicking navigates to /health operational workspace.
 export function FabricStatus() {
-  const { data, error, loading, execute } = useAsync(() => healthApi.getFabricHealth(), { immediate: true });
+  const fetchFabricHealth = useCallback(() => healthApi.getFabricHealth(), []);
+  const { data, error, loading, execute } = useAsync(fetchFabricHealth, { immediate: true });
 
   useEffect(() => {
     const timer = setInterval(() => {
