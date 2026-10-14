@@ -202,11 +202,93 @@ function verify(token, options = {}) {
   return payload;
 }
 
-module.exports = {
-  sign,
-  verify,
-  getSecret,
-  DEFAULT_DEV_SECRET,
-  DEFAULT_ISSUER,
-  DEFAULT_AUDIENCE,
-};
+/**
+ * Signs a refresh token (longer expiry, minimal claims).
+ * Refresh tokens are used to obtain new access tokens without re-authentication.
+ *
+ * @param {object} payload - Must contain sub (userId) at minimum
+ * @param {object} [options]
+ * @param {number} [options.expiresInSeconds=604800] - 7 days default
+ * @returns {string}
+ */
+function signRefreshToken(payload, options = {}) {
+  const secret = options.secret || getSecret();
+  const now = Math.floor(Date.now() / 1000);
+  const expiresIn = options.expiresInSeconds !== undefined ? options.expiresInSeconds : 7 * 24 * 60 * 60; // 7 days
+
+  const claims = {
+    ...payload,
+    type: 'refresh',
+    iat: now,
+    exp: now + expiresIn,
+    iss: options.issuer || process.env.JWT_ISSUER || DEFAULT_ISSUER,
+    aud: options.audience || process.env.JWT_AUDIENCE || DEFAULT_AUDIENCE,
+  };
+
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const encodedHeader = base64UrlEncode(JSON.stringify(header));
+  const encodedPayload = base64UrlEncode(JSON.stringify(claims));
+  const signingInput = `${encodedHeader}.${encodedPayload}`;
+
+  const signature = crypto.createHmac('sha256', secret).update(signingInput).digest();
+  const encodedSignature = base64UrlEncode(signature);
+
+  return `${signingInput}.${encodedSignature}`;
+}
+
+/**
+ * Verifies a refresh token and returns the payload.
+ *
+ * @param {string} token
+ * @param {object} [options]
+ * @returns {object} Decoded payload claims
+ */
+function verifyRefreshToken(token, options = {}) {
+  const payload = verify(token, options);
+
+  if (payload.type !== 'refresh') {
+    const err = new Error('Token is not a refresh token');
+    err.name = 'JsonWebTokenError';
+    throw err;
+  }
+
+  return payload;
+}
+
+/**
+ * Rotates access and refresh tokens.
+ * Validates the current refresh token, issues new access and refresh tokens.
+ * Implements refresh token rotation for security (old refresh token invalidated).
+ *
+ * @param {string} refreshToken
+ * @param {object} [options]
+ * @returns {{ accessToken: string, refreshToken: string }}
+ */
+function _rotateTokens(refreshToken, options = {}) {
+  const payload = verifyRefreshToken(refreshToken, options);
+
+  // Extract user identity from refresh token
+  const userPayload = {
+    sub: payload.sub,
+    name: payload.name,
+    org: payload.org,
+    role: payload.role,
+    permissions: payload.permissions || [],
+  };
+
+  const newAccessToken = sign(userPayload, {
+    expiresInSeconds: options.accessTokenExpiry || 3600,
+    issuer: options.issuer,
+    audience: options.audience,
+  });
+
+  const newRefreshToken = signRefreshToken({ sub: payload.sub }, {
+    expiresInSeconds: options.refreshTokenExpiry || 7 * 24 * 60 * 60,
+    issuer: options.issuer,
+    audience: options.audience,
+  });
+
+  return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+}
+
+

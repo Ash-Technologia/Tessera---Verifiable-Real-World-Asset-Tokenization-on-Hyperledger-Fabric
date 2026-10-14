@@ -35,13 +35,17 @@
     "@grpc/grpc-js": "^1.12.4",
     "@hyperledger/fabric-gateway": "^1.7.1",
     "cors": "^2.8.5",
+    "csrf": "^3.1.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "helmet": "^8.0.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
     "minio": "^8.0.7",
     "multer": "^2.4.0",
     "s3rver": "^3.7.1",
-    "winston": "^3.17.0"
+    "sanitize-html": "^2.18.0",
+    "winston": "^3.17.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

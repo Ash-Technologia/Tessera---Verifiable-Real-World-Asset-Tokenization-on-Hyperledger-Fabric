@@ -8,6 +8,14 @@ const cors = require('cors');
 const logger = require('./utils/logger');
 const { notFoundHandler, errorHandler } = require('./middleware/error.middleware');
 const { sanitizeIdentityHeaders, authenticate } = require('./middleware/auth.middleware');
+const {
+  createRateLimiter,
+  createAuthRateLimiter,
+  createSensitiveRateLimiter,
+  securityHeaders,
+  requestId,
+  sanitizeInput,
+} = require('./middleware/security.middleware');
 const authRoutes = require('./routes/auth.routes');
 const healthRoutes = require('./routes/health.routes');
 const assetRoutes = require('./routes/asset.routes');
@@ -41,7 +49,33 @@ const app = express();
 // ============================================================
 // Security middleware
 // ============================================================
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      fontSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  frameguard: { action: 'deny' },
+  hidePoweredBy: true,
+}));
 
 // CORS — restrict in production to your frontend origin
 app.use(cors({
@@ -49,14 +83,36 @@ app.use(cors({
     ? (process.env.FRONTEND_ORIGIN || 'http://localhost:5173')
     : '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-CSRF-Token', 'X-Session-ID'],
+  credentials: false,
+  maxAge: 86400,
 }));
+
+// Global rate limiting
+app.use(createRateLimiter());
+
+// Security headers
+app.use(securityHeaders);
+
+// Request ID for tracing
+app.use(requestId);
+
+// Input sanitization
+app.use(sanitizeInput);
 
 // ============================================================
 // Request parsing
 // ============================================================
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// Stricter rate limiting for authentication endpoints
+app.use('/api/auth', createAuthRateLimiter());
+
+// Stricter rate limiting for sensitive operations
+app.use('/api/assets/:assetId/transfer', createSensitiveRateLimiter());
+app.use('/api/assets/:assetId/tokenize', createSensitiveRateLimiter());
+app.use('/api/assets/:assetId/ownership', createSensitiveRateLimiter());
 
 // ============================================================
 // HTTP request logging
