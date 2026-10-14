@@ -36,7 +36,7 @@ const ErrorCodes = Object.freeze({
   IDENTITY_NOT_FOUND: 'IDENTITY_NOT_FOUND',
   CERTIFICATE_EXPIRED: 'CERTIFICATE_EXPIRED',
   CERTIFICATE_REVOKED: 'CERTIFICATE_REVOKED',
-};
+});
 
 /**
  * Custom error classes for specific error types
@@ -230,42 +230,6 @@ function mapFabricError(err) {
 }
 
 /**
- * Global error handling middleware for TESSERA backend.
- *
- * Catches errors thrown by route handlers and formats them as
- * consistent JSON responses. Never exposes internal stack traces
- * to clients in production.
- *
- * Security note: Fabric errors may contain internal MSP/identity details.
- * These are logged server-side but not returned to the client.
- */
-
-/**
- * 404 Not Found handler — must be registered after all routes.
- */
-function notFoundHandler(req, res) {
-  res.status(404).json({
-    success: false,
-    error: 'Not Found',
-    code: 'NOT_FOUND',
-    message: `Route ${req.method} ${req.path} not found`,
-    timestamp: new Date().toISOString(),
-  });
-}
-
-/**
- * Sanitizes client error messages in production.
- */
-function sanitizeClientErrorMessage(msg) {
-  if (process.env.NODE_ENV !== 'production' || typeof msg !== 'string') {
-    return msg;
-  }
-  // Strip internal filesystem paths from client error messages
-  let sanitized = msg.replace(/(?:[a-zA-Z]:\\[^\s:"]+|\/(?:etc|home|var|usr|blockchain|data|mnt)\/[^\s:"]+)/g, '[INTERNAL_PATH]');
-  return sanitized;
-}
-
-/**
  * Global error handler — must be registered last with 4 parameters.
  */
 // eslint-disable-next-line no-unused-vars
@@ -323,7 +287,7 @@ function errorHandler(err, req, res, next) {
 function asyncHandler(fn) {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
-  }
+  };
 }
 
 /**
@@ -423,12 +387,12 @@ async function withRetry(fn, options = {}) {
       return await fn();
     } catch (err) {
       lastError = err;
-      
+
       // Check if error is retryable
-      const isRetryable = retryableErrors.length === 0 
-        ? true 
+      const isRetryable = retryableErrors.length === 0
+        ? true
         : retryableErrors.some(e => err instanceof e || err.code === e.name);
-      
+
       if (!isRetryable || attempt === maxRetries) {
         throw err;
       }
@@ -451,6 +415,7 @@ async function withRetry(fn, options = {}) {
     }
     throw lastError;
   }
+}
 
 /**
  * Timeout wrapper for promises
@@ -460,8 +425,8 @@ function withTimeout(promise, timeoutMs, timeoutMessage) {
     promise,
     new Promise((_, reject) => {
       setTimeout(() => reject(new Error(timeoutMessage || `Operation timed out after ${timeoutMs}ms`)), timeoutMs);
-    });
-  );
+    })
+  ]);
 }
 
 /**
@@ -471,34 +436,34 @@ const rateLimitStore = new Map();
 
 function rateLimiter(options = {}) {
   const { windowMs = 60000, maxRequests = 100, keyGenerator = (req) => req.ip } = options;
-  
+
   return (req, res, next) => {
     const key = keyGenerator(req);
     const now = Date.now();
     const windowStart = now - windowMs;
-    
+
     if (!rateLimitStore.has(key)) {
       rateLimitStore.set(key, []);
     }
-    
+
     const requests = rateLimitStore.get(key).filter(time => time > windowStart);
-    
+
     if (requests.length >= maxRequests) {
       const retryAfter = Math.ceil((requests[0] + windowMs - now) / 1000);
       const err = new RateLimitError('Too many requests', retryAfter);
       return next(err);
     }
-    
+
     requests.push(now);
     rateLimitStore.set(key, requests);
     next();
-  }
+  };
 }
 
 module.exports = {
   // Error codes
   ErrorCodes,
-  
+
   // Error classes
   TesseraError,
   ValidationError,
@@ -509,7 +474,6 @@ module.exports = {
   PolicyDenialError,
   FabricError,
   FabricTimeoutError,
-  FabricTimeoutError: FabricTimeoutError,
   FabricCommitUncertainError,
   FabricEndorsementFailedError,
   FabricMvccConflictError,
@@ -520,26 +484,23 @@ module.exports = {
   IdentityNotFoundError,
   CertificateExpiredError,
   CertificateRevokedError,
-  
+
   // Middleware
   notFoundHandler,
   errorHandler,
   sanitizeClientErrorMessage,
   asyncHandler,
   mapFabricError,
-  
+
   // Circuit breaker
   CircuitBreaker,
   getCircuitBreaker,
   getCircuitBreakerStatus,
-  
+
   // Retry utilities
   withRetry,
   withTimeout,
-  
+
   // Rate limiting
   rateLimiter,
-  
-  // Error codes
-  ErrorCodes,
 };

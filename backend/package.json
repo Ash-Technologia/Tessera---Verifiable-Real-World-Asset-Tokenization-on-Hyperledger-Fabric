@@ -28,7 +28,8 @@
     "test:phase9e": "node ../tests/phase9e.test.js",
     "test:phase9f": "node ../tests/phase9f.test.js",
     "test:phase10": "node ../tests/phase10.test.js",
-    "verify:backup": "node scripts/verify-backup-integrity.js"
+    "verify:backup": "node scripts/verify-backup-integrity.js",
+    "lint": "eslint src --ext .js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.12.4",
@@ -43,6 +44,9 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
     "nodemon": "^3.1.9"
   },
   "keywords": [

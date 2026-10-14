@@ -255,13 +255,14 @@ class GatewayService {
         msp: config.mspId,
       });
     }
+  }
 
     /**
      * Creates a circuit breaker for an MSP connection
      */
     createCircuitBreaker(mspId) {
-      const circuitBreaker = {
-        state: 'CLOSED', // CLOSED, OPEN, HALF_OPEN
+      return {
+        state: 'CLOSED',
         failures: 0,
         successes: 0,
         lastFailure: 0,
@@ -339,18 +340,7 @@ class GatewayService {
             lastFailure: this.lastFailure,
           };
         },
-        
-        state: 'CLOSED',
-        failures: 0,
-        successes: 0,
-        lastFailure: 0,
-        halfOpenSuccesses: 0,
-        failureThreshold: 5,
-        resetTimeout: 30000,
-        successThreshold: 2,
       };
-      
-      return circuitBreaker;
     }
 
     /**
@@ -513,45 +503,44 @@ class GatewayService {
     }
 
     /**
-     * Gracefully disconnects all Fabric Gateway connections.
-     */
-    async disconnect() {
-      for (const [msp, conn] of this.connections.entries()) {
-        try {
-          if (conn.gateway) conn.gateway.close();
-          if (conn.grpcClient) conn.grpcClient.close();
-        } catch (err) {
-          logger.warn(`Error disconnecting gateway for ${msp}`, { error: err.message });
-        }
+   * Gracefully disconnects all Fabric Gateway connections.
+   */
+  async disconnect() {
+    for (const [msp, conn] of this.connections.entries()) {
+      try {
+        if (conn.gateway) conn.gateway.close();
+        if (conn.grpcClient) conn.grpcClient.close();
+      } catch (err) {
+        logger.warn(`Error disconnecting gateway for ${msp}`, { error: err.message });
       }
-      this.connections.clear();
-      this.gateway = null;
-      this.grpcClient = null;
-      this.network = null;
-      this.connected = false;
-      logger.info('All Fabric Gateway connections disconnected.');
     }
+    this.connections.clear();
+    this.gateway = null;
+    this.grpcClient = null;
+    this.network = null;
+    this.connected = false;
+    logger.info('All Fabric Gateway connections disconnected.');
+  }
 
-    /**
-     * Returns connection status for health endpoint.
-     */
-    getStatus() {
-      const circuitBreakers = {};
-      for (const [msp, conn] of this.connections.entries()) {
-        if (conn.circuitBreaker) {
-          circuitBreakers[msp] = conn.circuitBreaker.getState ? conn.circuitBreaker.getState() : conn.circuitBreaker;
-        }
+  /**
+   * Returns connection status for health endpoint.
+   */
+  getStatus() {
+    const circuitBreakers = {};
+    for (const [msp, conn] of this.connections.entries()) {
+      if (conn.circuitBreaker) {
+        circuitBreakers[msp] = conn.circuitBreaker.getState ? conn.circuitBreaker.getState() : conn.circuitBreaker;
       }
-      
-      return {
-        connected: this.connected,
-        channel: process.env.FABRIC_CHANNEL || 'tessera-channel',
-        peer: process.env.FABRIC_PEER_ENDPOINT || 'localhost:7051',
-        msp: process.env.FABRIC_MSP_ID || 'IssuerMSP',
-        connectedMSPs: Array.from(this.connections.keys()),
-        circuitBreakers,
-      };
     }
+    
+    return {
+      connected: this.connected,
+      channel: process.env.FABRIC_CHANNEL || 'tessera-channel',
+      peer: process.env.FABRIC_PEER_ENDPOINT || 'localhost:7051',
+      msp: process.env.FABRIC_MSP_ID || 'IssuerMSP',
+      connectedMSPs: Array.from(this.connections.keys()),
+      circuitBreakers,
+    };
   }
 
   /**

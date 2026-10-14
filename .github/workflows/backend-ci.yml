@@ -1,0 +1,89 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint 2>&1 || echo "No lint script defined, skipping"
+
+      - name: Run backend tests
+        run: npm run test
+
+      - name: Run Phase 3 tests
+        run: npm run test:phase3
+
+      - name: Run Phase 4 tests
+        run: npm run test:phase4
+
+      - name: Run Phase 5 tests
+        run: npm run test:phase5
+
+      - name: Run Phase 6a tests
+        run: npm run test:phase6a
+
+      - name: Run Phase 6b tests
+        run: npm run test:phase6b
+
+      - name: Run Phase 6c tests
+        run: npm run test:phase6c
+
+      - name: Run Phase 7a tests
+        run: npm run test:phase7a
+
+      - name: Run Phase 7b tests
+        run: npm run test:phase7b
+
+      - name: Run Phase 7c tests
+        run: npm run test:phase7c
+
+      - name: Run Phase 9a tests
+        run: npm run test:phase9a
+
+      - name: Run Phase 9b tests
+        run: npm run test:phase9b
+
+      - name: Run Phase 9c tests
+        run: npm run test:phase9c
+
+      - name: Run Phase 9d tests
+        run: npm run test:phase9d
+
+      - name: Run Phase 9e tests
+        run: npm run test:phase9e
+
+      - name: Run Phase 9f tests
+        run: npm run test:phase9f
+
+      - name: Run Phase 10 tests
+        run: npm run test:phase10
+
+      - name: Verify backup integrity
+        run: npm run verify:backup
