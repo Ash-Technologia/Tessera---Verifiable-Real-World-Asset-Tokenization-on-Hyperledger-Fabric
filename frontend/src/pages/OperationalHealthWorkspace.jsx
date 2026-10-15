@@ -140,11 +140,22 @@ export function OperationalHealthWorkspace() {
               {probing ? 'Probing Network...' : '↻ Probe System Now'}
             </Button>
             <Button
+              id="btn-inspect-payloads"
               variant="secondary"
               size="sm"
-              onClick={() => setShowRawPayloads(prev => !prev)}
+              onClick={() => {
+                setShowRawPayloads((prev) => {
+                  const next = !prev;
+                  if (next) {
+                    setTimeout(() => {
+                      document.getElementById('raw-payloads-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 50);
+                  }
+                  return next;
+                });
+              }}
             >
-              {showRawPayloads ? 'Hide Raw Payloads' : '{ } Inspect Payloads'}
+              {showRawPayloads ? '▲ Hide Raw Payloads' : '{ } Inspect Payloads'}
             </Button>
           </div>
         </div>
@@ -530,8 +541,9 @@ export function OperationalHealthWorkspace() {
 
       {/* 6. Raw Diagnostic Payloads Inspector (Collapsible) */}
       {showRawPayloads && (
-        <Card title="Raw Diagnostics Payloads (JSON)">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div id="raw-payloads-section">
+          <Card title="Raw Diagnostics Payloads (JSON)">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <span className="ts-mono" style={{ fontWeight: 600, display: 'block', marginBottom: '0.4rem' }}>
                 GET /health (Backend Process Liveness)
@@ -569,6 +581,7 @@ export function OperationalHealthWorkspace() {
             </div>
           </div>
         </Card>
+      </div>
       )}
     </div>
   );
