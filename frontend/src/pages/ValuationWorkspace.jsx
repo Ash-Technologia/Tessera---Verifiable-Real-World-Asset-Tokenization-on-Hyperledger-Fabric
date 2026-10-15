@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Card,
@@ -57,18 +57,41 @@ function isDateExpired(dateString) {
 }
 
 export function ValuationWorkspace() {
-  const { assetId } = useParams();
+  const { assetId: routeAssetId } = useParams();
   const { identity } = useIdentity();
+
+  const [assetList, setAssetList] = useState([]);
+  const [activeAssetId, setActiveAssetId] = useState(routeAssetId || '');
+
+  // Load available assets when accessed directly via /valuation
+  useEffect(() => {
+    if (routeAssetId) {
+      setActiveAssetId(routeAssetId);
+    } else {
+      let active = true;
+      assetsApi.listAssets({ pageSize: 50 }).then((res) => {
+        if (!active) return;
+        const list = res?.assets || [];
+        setAssetList(list);
+        if (list.length > 0) {
+          setActiveAssetId((prev) => prev || list[0].assetId);
+        }
+      }).catch(() => {});
+      return () => { active = false; };
+    }
+  }, [routeAssetId]);
+
+  const assetId = activeAssetId;
 
   // Active tab: 'overview' | 'submit' | 'approval'
   const [activeTab, setActiveTab] = useState('overview');
 
   // Queries
-  const fetchEnvelope = useCallback(() => assetsApi.getAssetEnvelope(assetId), [assetId]);
-  const fetchValuations = useCallback(() => valuationApi.list(assetId).catch(() => []), [assetId]);
-  const fetchReadiness = useCallback(() => valuationApi.getReadiness(assetId).catch((err) => ({ error: err })), [assetId]);
-  const fetchApprovals = useCallback(() => approvalApi.list(assetId).catch(() => []), [assetId]);
-  const fetchApprovalStatus = useCallback(() => approvalApi.getStatus(assetId).catch(() => null), [assetId]);
+  const fetchEnvelope = useCallback(() => (assetId ? assetsApi.getAssetEnvelope(assetId) : Promise.resolve(null)), [assetId]);
+  const fetchValuations = useCallback(() => (assetId ? valuationApi.list(assetId).catch(() => []) : Promise.resolve([])), [assetId]);
+  const fetchReadiness = useCallback(() => (assetId ? valuationApi.getReadiness(assetId).catch((err) => ({ error: err })) : Promise.resolve(null)), [assetId]);
+  const fetchApprovals = useCallback(() => (assetId ? approvalApi.list(assetId).catch(() => []) : Promise.resolve([])), [assetId]);
+  const fetchApprovalStatus = useCallback(() => (assetId ? approvalApi.getStatus(assetId).catch(() => null) : Promise.resolve(null)), [assetId]);
 
   const assetQuery = useQuery(fetchEnvelope, [assetId]);
   const valuationsQuery = useQuery(fetchValuations, [assetId]);
@@ -338,14 +361,41 @@ export function ValuationWorkspace() {
       <Breadcrumb
         crumbs={[
           { label: 'Assets', to: '/assets' },
-          { label: assetId, to: `/assets/${encodeURIComponent(assetId)}` },
+          ...(routeAssetId ? [{ label: assetId, to: `/assets/${encodeURIComponent(assetId)}` }] : []),
           { label: 'Valuation & Approval Workspace' },
         ]}
       />
 
+      {!routeAssetId && (
+        <div style={{ margin: '1rem 0', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--ts-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <label htmlFor="val-asset-select" className="ts-label" style={{ margin: 0, fontWeight: 600 }}>
+              Active Asset:
+            </label>
+            <select
+              id="val-asset-select"
+              className="ts-input"
+              style={{ width: 'auto', minWidth: '220px', padding: '0.4rem 0.6rem' }}
+              value={activeAssetId}
+              onChange={(e) => setActiveAssetId(e.target.value)}
+              aria-label="Select Active Asset"
+            >
+              {assetList.map((a) => (
+                <option key={a.assetId} value={a.assetId}>
+                  {a.assetId} ({a.assetType} · {a.status})
+                </option>
+              ))}
+            </select>
+          </div>
+          <span className="ts-metadata" style={{ color: 'var(--ts-text-muted)' }}>
+            Inspecting live valuation records on ledger for <strong>{activeAssetId || 'No asset'}</strong>
+          </span>
+        </div>
+      )}
+
       <div style={{ marginTop: '0.8rem', marginBottom: '1.5rem' }}>
         <SectionHeader
-          title={`Valuation & Tokenization Approval: ${assetId}`}
+          title={`Valuation & Tokenization Approval: ${assetId || 'Select Asset'}`}
           subtitle={`Appraisal registry, certified valuation verification, and formal tokenization governance on Hyperledger Fabric`}
           actions={
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
