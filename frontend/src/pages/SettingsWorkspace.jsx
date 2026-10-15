@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Card, MetricCard, Button, Badge, Input, Select, Table, LoadingState, ErrorState, EmptyState, SectionHeader } from '../components/ui/index.js';
-import { useIdentity } from '../context/IdentityContext.jsx';
-import { APP_NAME, APP_TAGLINE } from '../lib/config.js';
-import { apiGet } from '../services/api/client.js';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, MetricCard, Button, Badge } from '../components/ui/index.js';
 import { Icon } from '../components/ui/Icons.jsx';
+import { useIdentity } from '../context/IdentityContext.jsx';
+import { APP_NAME, APP_TAGLINE, API_BASE_URL } from '../lib/config.js';
+import { apiGet } from '../services/api/client.js';
 
 export function SettingsWorkspace() {
   const { identity, login, logout, personas, isAuthenticated } = useIdentity();
@@ -83,7 +83,7 @@ export function SettingsWorkspace() {
           }}
           role="status"
         >
-          OK {successMsg}
+          &check; {successMsg}
         </div>
       )}
 
@@ -247,58 +247,56 @@ export function SettingsWorkspace() {
                 </span>
               </div>
             </div>
-</div>
-    </Card>
-  </div>
+          </div>
+        </Card>
+      </div>
 
-  {/* Consortium Role & Permissions Matrix Table */}
-  {/* {matrixData && (
-    <div style={{ marginTop: '2rem' }}>
-      <Card title="Authoritative Consortium Role & Permissions Matrix">
-        <p className="ts-metadata" style={{ marginBottom: '1rem', color: 'var(--ts-text-muted)' }}>
-          Server-enforced authorization rules and Maker-Checker constraints across platform operations:
-        </p>
-        <div className="ts-table-wrapper" style={{ overflowX: 'auto' }}>
-          <table className="ts-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th>Role</th>
-                <th>Organization (MSP)</th>
-                <th>Create Asset</th>
-                <th>Verify Evidence</th>
-                <th>Validate Valuation</th>
-                <th>Approve Token</th>
-                <th>Mint Token</th>
-                <th>Execute Transfer</th>
-                <th>Manage Policies</th>
-                <th>Read Audit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(matrixData).map(([roleKey, r]) => (
-                <tr key={roleKey}>
-                  <td>
-                    <strong>{r.name}</strong>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--ts-text-muted)' }}><code>{roleKey}</code></div>
-                  </td>
-                  <td><code>{r.organization}</code></td>
-                  <td>{r.canCreateAsset ? 'Allowed' : 'Forbidden'}</td>
-                  <td>{r.canVerifyEvidence ? 'Allowed (Checker)' : 'Forbidden (Maker)'}</td>
-                  <td>{r.canValidateValuation ? 'Allowed (Checker)' : 'Forbidden (Maker)'}</td>
-                  <td>{r.canApproveTokenization ? 'Allowed' : 'Forbidden'}</td>
-                  <td>{r.canMintToken ? 'Allowed' : 'Forbidden'}</td>
-                  <td>{r.canExecuteTransfer ? 'Allowed' : 'Forbidden'}</td>
-                  <td>{r.canManagePolicies ? 'Allowed (Quorum)' : 'Forbidden'}</td>
-                  <td>{r.canReadAudit ? 'Allowed' : 'Forbidden'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Consortium Role & Permissions Matrix Table */}
+      {matrixData && (
+        <div style={{ marginTop: '2rem' }}>
+          <Card title="Authoritative Consortium Role & Permissions Matrix">
+            <p className="ts-metadata" style={{ marginBottom: '1rem', color: 'var(--ts-text-muted)' }}>
+              Server-enforced authorization rules and Maker-Checker constraints across platform operations:
+            </p>
+            <div className="ts-table-wrapper" style={{ overflowX: 'auto' }}>
+              <table className="ts-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th>Role</th>
+                    <th>Organization (MSP)</th>
+                    <th>Create Asset</th>
+                    <th>Verify Evidence</th>
+                    <th>Validate Valuation</th>
+                    <th>Approve Token</th>
+                    <th>Mint Token</th>
+                    <th>Execute Transfer</th>
+                    <th>Manage Policies</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(matrixData).map(([roleKey, r]) => (
+                    <tr key={roleKey}>
+                      <td>
+                        <strong>{r.name}</strong>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--ts-text-muted)' }}><code>{roleKey}</code></div>
+                      </td>
+                      <td><code>{r.organization}</code></td>
+                      <td>{r.canCreateAsset ? '✅ Allowed' : '❌ Forbidden'}</td>
+                      <td>{r.canVerifyEvidence ? '✅ Allowed (Checker)' : '❌ Forbidden (Maker)'}</td>
+                      <td>{r.canValidateValuation ? '✅ Allowed (Checker)' : '❌ Forbidden (Maker)'}</td>
+                      <td>{r.canApproveTokenization ? '✅ Allowed' : '❌ Forbidden'}</td>
+                      <td>{r.canMintToken ? '✅ Allowed' : '❌ Forbidden'}</td>
+                      <td>{r.canExecuteTransfer ? '✅ Allowed' : '❌ Forbidden'}</td>
+                      <td>{r.canManagePolicies ? '✅ Allowed (Quorum)' : '❌ Forbidden'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>
-      </Card>
+      )}
     </div>
-  )} */}
-</div>
   );
 }
 
