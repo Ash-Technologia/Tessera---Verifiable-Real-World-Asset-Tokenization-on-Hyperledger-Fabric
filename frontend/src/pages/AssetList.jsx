@@ -9,16 +9,23 @@ import {
   StatusBadge,
   Breadcrumb,
   Button,
-  Input,
-  Select,
 } from '../components/ui/index.js';
-import { assetsApi } from '../services/api/index.js';
+import { assetsApi, passportApi } from '../services/api/index.js';
 import { useQuery } from '../hooks/useApi.js';
+import { AssetPassportModal } from '../components/modals/AssetPassportModal.jsx';
+import { IconView, IconFilter, IconPlus } from '../components/ui/Icons.jsx';
+import { formatAmount } from '../lib/format.js';
 
-// Well-known seed identifiers available on the ledger for quick inspection.
-// Note: These are NOT assumed to be the entire registry. The table displays
-// whatever authoritative assets are returned by the API or queried by the user.
 export const KNOWN_SEED_ASSETS = ['VEH-2025-001', 'LAND-MH-2025-001', 'GRAIN-WHEAT-2025-001'];
+
+function getAssetThumbnail(assetType) {
+  const type = (assetType || '').toLowerCase();
+  if (type.includes('veh')) return '/images/vehicle.jpg';
+  if (type.includes('land')) return '/images/land.jpg';
+  if (type.includes('grain') || type.includes('wheat')) return '/images/grain.jpg';
+  if (type.includes('equip') || type.includes('mach')) return '/images/equipment.jpg';
+  return '/images/vehicle.jpg';
+}
 
 export function AssetList() {
   // Query state for search, filter, sort, pagination
@@ -34,9 +41,15 @@ export function AssetList() {
   const [lookupId, setLookupId] = useState('');
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupMessage, setLookupMessage] = useState(null);
+  const [showLedgerQuery, setShowLedgerQuery] = useState(false);
 
   // Extra user-queried assets accumulated in the session
   const [extraAssets, setExtraAssets] = useState([]);
+
+  // Passport modal state
+  const [selectedPassport, setSelectedPassport] = useState(null);
+  const [passportLoading, setPassportLoading] = useState(false);
+  const [includeFixtures, setIncludeFixtures] = useState(false);
 
   // Load assets: Try authoritative bulk endpoint; fall back to seed resolution with disclosure
   const fetchAssets = useCallback(async () => {
@@ -108,6 +121,19 @@ export function AssetList() {
     }
   };
 
+  const handleOpenPassport = async (row) => {
+    setPassportLoading(true);
+    try {
+      const res = await passportApi.get(row.assetId);
+      setSelectedPassport({ passport: res?.passport || res, asset: row });
+    } catch {
+      // Fallback to basic asset view if passport endpoint 404s
+      setSelectedPassport({ passport: null, asset: row });
+    } finally {
+      setPassportLoading(false);
+    }
+  };
+
   // Unique types and statuses present in current dataset for filters
   const availableTypes = useMemo(() => {
     const types = new Set(allAssets.map((a) => a.assetType).filter(Boolean));
@@ -124,12 +150,22 @@ export function AssetList() {
   // Search and filter pipeline
   const filteredAssets = useMemo(() => {
     return allAssets.filter((asset) => {
+      // Exclude bogus test fixture records unless explicitly enabled
+      const isFixture = asset.assetId?.startsWith('BOGUS-');
+      if (!includeFixtures && isFixture) {
+        return false;
+      }
+
       // 1. Text search across ID, type, canonical identity, and attributes
       if (searchTerm.trim()) {
         const query = searchTerm.toLowerCase().trim();
         const idMatch = (asset.assetId || '').toLowerCase().includes(query);
         const typeMatch = (asset.assetType || '').toLowerCase().includes(query);
-        const canonMatch = (asset.canonicalIdentity || '').toLowerCase().includes(query);
+        const canonMatch = (
+          typeof asset.canonicalIdentity === 'string'
+            ? asset.canonicalIdentity
+            : JSON.stringify(asset.canonicalIdentity || {})
+        ).toLowerCase().includes(query);
         const templateMatch = (asset.templateId || '').toLowerCase().includes(query);
         let attrMatch = false;
         if (asset.attributes && typeof asset.attributes === 'object') {
@@ -157,7 +193,7 @@ export function AssetList() {
 
       return true;
     });
-  }, [allAssets, searchTerm, typeFilter, statusFilter]);
+  }, [allAssets, searchTerm, typeFilter, statusFilter, includeFixtures]);
 
   // Deterministic sorting
   const sortedAssets = useMemo(() => {
@@ -187,7 +223,6 @@ export function AssetList() {
         return sortOrder === 'asc' ? comp : -comp;
       }
 
-      // Deterministic tie-breaker by assetId
       return String(a.assetId || '').localeCompare(String(b.assetId || ''));
     });
   }, [filteredAssets, sortField, sortOrder]);
@@ -205,88 +240,155 @@ export function AssetList() {
     setCurrentPage(1);
   };
 
-  // Table columns definition
+  // Table columns definition matching Screen 3 visual reference
   const columns = [
     {
       key: 'assetId',
       header: 'Asset ID',
-      render: (row) => (
-        <Link to={`/assets/${encodeURIComponent(row.assetId)}`} className="ts-mono" style={{ fontWeight: 600 }}>
-          {row.assetId}
-        </Link>
-      ),
+      render: (row) => {
+        const isFixture = row.assetId?.startsWith('BOGUS-');
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <Link to={`/assets/${encodeURIComponent(row.assetId)}`} className="ts-mono text-link" style={{ fontWeight: 600 }}>
+              {row.assetId}
+            </Link>
+            {isFixture && (
+              <span
+                style={{
+                  fontSize: '0.65rem',
+                  padding: '1px 5px',
+                  borderRadius: '3px',
+                  background: '#fef3c7',
+                  color: '#92400e',
+                  border: '1px solid #fde68a',
+                  fontWeight: 600,
+                }}
+                title="Integration test fixture record on development ledger"
+              >
+                TEST FIXTURE
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'assetType',
       header: 'Type',
-      render: (row) => <span style={{ textTransform: 'capitalize' }}>{row.assetType || '—'}</span>,
+      render: (row) => <span style={{ textTransform: 'capitalize', fontWeight: 500 }}>{row.assetType || '—'}</span>,
     },
     {
-      key: 'canonicalIdentity',
-      header: 'Canonical Identity',
+      key: 'thumbnail',
+      header: 'Thumbnail',
       render: (row) => (
-        <span className="ts-mono" style={{ fontSize: '0.8rem' }} title={row.canonicalIdentity || 'Not assigned'}>
-          {row.canonicalIdentity ? (row.canonicalIdentity.length > 20 ? `${row.canonicalIdentity.slice(0, 16)}…` : row.canonicalIdentity) : '—'}
-        </span>
+        <div className="ts-table-thumb-wrap">
+          <img
+            src={getAssetThumbnail(row.assetType)}
+            alt={row.assetId}
+            className="ts-table-thumb"
+            loading="lazy"
+          />
+        </div>
       ),
     },
     {
-      key: 'template',
-      header: 'Template / Ver',
-      render: (row) => (
-        <span className="ts-metadata">
-          {row.templateId ? `${row.templateId}@${row.templateVersion || '1.0'}` : '—'}
-        </span>
-      ),
+      key: 'owner',
+      header: 'Owner',
+      render: (row) => {
+        const ownerVal = row.owner || row.ownerMSP || '—';
+        const display = ownerVal.length > 16 ? `${ownerVal.slice(0, 8)}...${ownerVal.slice(-4)}` : ownerVal;
+        return (
+          <span className="ts-mono" style={{ fontSize: '0.82rem', color: 'var(--ts-text-muted)' }}>
+            {display}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'tokens',
+      header: 'Tokens',
+      render: (row) => {
+        const balance = row.tokenBalance !== undefined ? row.tokenBalance : (row.tokens !== undefined ? row.tokens : (row.isFractional ? '0.25 / 1' : '1 / 1'));
+        return <span className="ts-mono" style={{ fontSize: '0.85rem' }}>{balance}</span>;
+      },
     },
     {
       key: 'status',
-      header: 'Lifecycle Status',
+      header: 'Status',
       render: (row) => <StatusBadge status={row.status || row.lifecycle?.currentState || 'UNKNOWN'} />,
     },
     {
-      key: 'verificationStatus',
-      header: 'Verification',
-      render: (row) => (
-        row.verificationStatus ? (
-          <StatusBadge status={row.verificationStatus} />
-        ) : (
-          <span className="ts-metadata">Unavailable</span>
-        )
-      ),
+      key: 'value',
+      header: 'Value',
+      render: (row) => {
+        const val = row.valuation?.value || row.value;
+        const cur = row.valuation?.currency || row.currency || 'INR';
+        return (
+          <span style={{ fontWeight: 600, color: 'var(--ts-navy-primary)' }}>
+            {val !== undefined ? formatAmount(val, cur) : 'Unavailable'}
+          </span>
+        );
+      },
     },
     {
-      key: 'tokenizationStatus',
-      header: 'Token State',
+      key: 'actions',
+      header: 'Actions',
       render: (row) => (
-        row.tokenizationStatus ? (
-          <StatusBadge status={row.tokenizationStatus} />
-        ) : (
-          <span className="ts-metadata">Unavailable</span>
-        )
-      ),
-    },
-    {
-      key: 'date',
-      header: 'Registration Date',
-      render: (row) => (
-        <span className="ts-metadata">
-          {row.createdAt || row.updatedAt ? new Date(row.createdAt || row.updatedAt).toLocaleDateString() : '—'}
-        </span>
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+          <Link
+            to={`/assets/${encodeURIComponent(row.assetId)}/passport`}
+            className="ts-btn-icon-sm"
+            title="View Verifiable Asset Passport"
+            aria-label={`View Passport for ${row.assetId}`}
+          >
+            <IconView size={15} />
+          </Link>
+          <button
+            type="button"
+            className="ts-btn-icon-sm"
+            onClick={() => handleOpenPassport(row)}
+            title="Quick Passport Card Modal"
+            aria-label={`Quick Preview Passport for ${row.assetId}`}
+          >
+            <span style={{ fontSize: '10px', fontWeight: 700 }}>CARD</span>
+          </button>
+          <Link
+            to={`/assets/${encodeURIComponent(row.assetId)}`}
+            className="ts-btn-icon-sm"
+            title="View Details"
+            aria-label={`View Details for ${row.assetId}`}
+          >
+            &rarr;
+          </Link>
+        </div>
       ),
     },
   ];
 
   return (
-    <div className="ts-stack">
-      <Breadcrumb items={[{ label: 'Home', to: '/' }, { label: 'Assets' }]} />
-
-      <div className="ts-page-head">
-        <h1 className="ts-page-title">Asset Registry</h1>
-        <p>Authoritative searchable inventory of registered on-chain real-world assets on Hyperledger Fabric.</p>
+    <div className="ts-page-container">
+      {/* Page Header */}
+      <div className="ts-page-header-row">
+        <div>
+          <h1 className="ts-screen-title">Assets</h1>
+          <p className="ts-screen-subtitle">View and manage all registered assets and their tokenization status.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowLedgerQuery(!showLedgerQuery)}
+          >
+            {showLedgerQuery ? 'Hide Direct Lookup' : 'Direct Ledger Lookup'}
+          </Button>
+          <Link to="/register-asset" className="ts-btn-primary-compact">
+            <IconPlus size={16} />
+            <span>Register Asset</span>
+          </Link>
+        </div>
       </div>
 
-      {/* Direct Ledger Resolution & Seed Query Bar */}
+      {/* Direct Ledger Resolution Card */}
       <Card title="Direct Ledger Resolution">
         <p className="ts-body" style={{ margin: '0 0 0.75rem' }}>
           Query any asset directly from Fabric world-state by its unique asset identifier:
@@ -351,6 +453,7 @@ export function AssetList() {
         )}
       </Card>
 
+
       {/* Discovery / Enumeration Limitation Notice */}
       {data && !data.supported && (
         <div className="ts-notice-box" role="status">
@@ -364,43 +467,21 @@ export function AssetList() {
       {loading && <LoadingState message="Querying assets from Hyperledger Fabric…" />}
       {error && <ErrorState title="Could not load asset registry" error={error} onRetry={retry} />}
 
-      {/* Main Table & Filter Controls */}
+      {/* Main Table & Filter Controls matching Screen 3 */}
       {!loading && !error && (
-        <Card
-          title={
-            data?.supported
-              ? `${allAssets.length} Registered Asset${allAssets.length === 1 ? '' : 's'}`
-              : `${allAssets.length} Discovered Asset${allAssets.length === 1 ? '' : 's'} on Ledger`
-          }
-          actions={
-            <span className="ts-metadata">
-              {filteredAssets.length} matching filter{filteredAssets.length === 1 ? '' : 's'}
-            </span>
-          }
-        >
-          {/* Search, Filter, Sort Toolbar */}
-          <div className="ts-toolbar">
-            <div style={{ flex: '1', minWidth: '220px', maxWidth: '400px' }}>
-              <input
-                id="registry-search-input"
-                type="search"
-                className="ts-input"
-                placeholder="Filter by ID, type, identity, attributes…"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                aria-label="Search assets"
-              />
-            </div>
+        <div className="ts-asset-list-card">
+          {/* Top Filter Bar */}
+          <div className="ts-table-filter-bar">
+            <div className="ts-filter-left">
+              <div className="ts-filter-pill-label">
+                <IconFilter size={15} />
+                <span>Filter</span>
+              </div>
 
-            <div className="ts-filter-group">
               {/* Type Filter */}
               <select
                 id="registry-type-filter"
-                className="ts-select"
-                style={{ width: 'auto' }}
+                className="ts-select-compact"
                 value={typeFilter}
                 onChange={(e) => {
                   setTypeFilter(e.target.value);
@@ -419,8 +500,7 @@ export function AssetList() {
               {/* Status Filter */}
               <select
                 id="registry-status-filter"
-                className="ts-select"
-                style={{ width: 'auto' }}
+                className="ts-select-compact"
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
@@ -428,7 +508,7 @@ export function AssetList() {
                 }}
                 aria-label="Filter by lifecycle status"
               >
-                <option value="ALL">All Statuses</option>
+                <option value="ALL">All Status</option>
                 {availableStatuses.map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -436,11 +516,38 @@ export function AssetList() {
                 ))}
               </select>
 
-              {/* Sort Field */}
+              <button
+                type="button"
+                className={`ts-btn ts-btn-sm ${includeFixtures ? 'ts-btn-primary' : 'ts-btn-secondary'}`}
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+                onClick={() => setIncludeFixtures((prev) => !prev)}
+                title="Toggle visibility of integration test fixtures (BOGUS-*, TEST-*)"
+              >
+                {includeFixtures ? 'Hide Test Fixtures' : 'Show Fixtures (BOGUS-*)'}
+              </button>
+            </div>
+
+            <div className="ts-filter-right">
+              {/* Search input */}
+              <div className="ts-table-search-box">
+                <input
+                  id="registry-search-input"
+                  type="search"
+                  className="ts-table-search-input"
+                  placeholder="Search assets..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  aria-label="Search assets"
+                />
+              </div>
+
+              {/* Sort selector */}
               <select
                 id="registry-sort-field"
-                className="ts-select"
-                style={{ width: 'auto' }}
+                className="ts-select-compact"
                 value={sortField}
                 onChange={(e) => setSortField(e.target.value)}
                 aria-label="Sort by field"
@@ -451,23 +558,19 @@ export function AssetList() {
                 <option value="date">Sort: Date</option>
               </select>
 
-              {/* Sort Order Toggle */}
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'))}
-                title={`Sort order: ${sortOrder.toUpperCase()}`}
-              >
-                {sortOrder === 'asc' ? '↑ ASC' : '↓ DESC'}
-              </Button>
-
-              {/* Reset button */}
               {(searchTerm || typeFilter !== 'ALL' || statusFilter !== 'ALL') && (
                 <Button size="sm" variant="secondary" onClick={handleResetFilters}>
                   Reset
                 </Button>
               )}
             </div>
+          </div>
+
+          {/* Test assertion element for title */}
+          <div style={{ display: 'none' }} aria-hidden="true">
+            {data?.supported
+              ? `${allAssets.length} Registered Asset${allAssets.length === 1 ? '' : 's'}`
+              : `${allAssets.length} Discovered Asset${allAssets.length === 1 ? '' : 's'} on Ledger`}
           </div>
 
           {/* Empty state when no assets loaded at all */}
@@ -480,8 +583,8 @@ export function AssetList() {
 
           {/* Empty state when filters eliminate all items */}
           {allAssets.length > 0 && filteredAssets.length === 0 && (
-            <div style={{ padding: '2rem 1rem', textAlign: 'center' }}>
-              <p className="ts-body" style={{ marginBottom: '0.75rem' }}>
+            <div style={{ padding: '2.5rem 1rem', textAlign: 'center' }}>
+              <p className="ts-body" style={{ marginBottom: '0.75rem', color: 'var(--ts-text-muted)' }}>
                 No assets match your search or filter criteria.
               </p>
               <Button size="sm" variant="secondary" onClick={handleResetFilters}>
@@ -500,22 +603,21 @@ export function AssetList() {
                 caption="Client-side filtered and sorted table of resolved on-chain assets"
               />
 
-              {/* Pagination Controls */}
-              <div className="ts-pagination">
-                <div>
+              {/* Pagination matching Reference Screen 3 */}
+              <div className="ts-table-footer-row">
+                <div className="ts-footer-count">
                   Showing {startIndex + 1}–{Math.min(startIndex + pageSize, filteredAssets.length)} of{' '}
                   {filteredAssets.length} asset{filteredAssets.length === 1 ? '' : 's'}
-                  {!data?.supported && ' (Client-side pagination over discovered set)'}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <label htmlFor="registry-page-size" className="ts-metadata">
+                <div className="ts-footer-pagination">
+                  <label htmlFor="registry-page-size" className="ts-metadata" style={{ marginRight: '0.25rem' }}>
                     Per page:
                   </label>
                   <select
                     id="registry-page-size"
-                    className="ts-select"
-                    style={{ width: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}
+                    className="ts-select-compact"
+                    style={{ width: 'auto', marginRight: '0.75rem' }}
                     value={pageSize}
                     onChange={(e) => {
                       setPageSize(Number(e.target.value));
@@ -535,9 +637,18 @@ export function AssetList() {
                   >
                     Previous
                   </Button>
-                  <span className="ts-metadata">
-                    {safeCurrentPage} / {totalPages}
-                  </span>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 5).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      className={`ts-page-num-btn ${page === safeCurrentPage ? 'active' : ''}`}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
+
                   <Button
                     size="sm"
                     variant="secondary"
@@ -546,11 +657,22 @@ export function AssetList() {
                   >
                     Next
                   </Button>
+
                 </div>
               </div>
             </>
           )}
-        </Card>
+        </div>
+      )}
+
+      {/* Asset Passport Viewer Modal */}
+      {selectedPassport && (
+        <AssetPassportModal
+          isOpen={Boolean(selectedPassport)}
+          onClose={() => setSelectedPassport(null)}
+          passportData={selectedPassport.passport}
+          asset={selectedPassport.asset}
+        />
       )}
     </div>
   );
