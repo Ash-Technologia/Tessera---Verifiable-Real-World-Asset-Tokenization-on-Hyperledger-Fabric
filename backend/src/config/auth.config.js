@@ -18,6 +18,7 @@ const ROLES = Object.freeze({
   VERIFIER: 'VERIFIER',
   VALUATION_APPROVER: 'VALUATION_APPROVER',
   COMPLIANCE_OFFICER: 'COMPLIANCE_OFFICER',
+  GOVERNANCE: 'GOVERNANCE',
   INVESTOR: 'INVESTOR',
   AUDITOR: 'AUDITOR',
 });
@@ -26,6 +27,7 @@ const MSPS = Object.freeze({
   ISSUER_MSP: 'IssuerMSP',
   VERIFIER_MSP: 'VerifierMSP',
   COMPLIANCE_MSP: 'ComplianceMSP',
+  GOVERNANCE_MSP: 'GovernanceMSP',
   REGULATOR_MSP: 'RegulatorMSP',
   AUDITOR_MSP: 'AuditorMSP',
 });
@@ -73,7 +75,7 @@ const ROLE_PERMISSIONS_MATRIX = Object.freeze({
     canCreateAsset: true,
     canVerifyEvidence: false, // Maker-Checker: Cannot verify own asset
     canValidateValuation: false, // Maker-Checker: VerifierMSP required
-    canApproveTokenization: false, // Maker-Checker: Compliance required
+    canApproveTokenization: false, // Maker-Checker: Compliance/Governance required
     canMintToken: true, // Only after tokenization approval exists
     canExecuteTransfer: true, // Subject to transfer policies
     canManagePolicies: false, // Governance quorum required
@@ -150,6 +152,32 @@ const ROLE_PERMISSIONS_MATRIX = Object.freeze({
     canMintToken: false,
     canExecuteTransfer: false,
     canManagePolicies: true,
+    canReadAudit: true,
+  },
+  [ROLES.GOVERNANCE]: {
+    name: 'Consortium Governance Approver',
+    organization: MSPS.GOVERNANCE_MSP,
+    permissions: Object.freeze([
+      'assets:read',
+      'evidence:read',
+      'valuation:read',
+      'token:read',
+      'token:approve',
+      'ownership:read',
+      'transfer:read',
+      'policies:manage',
+      'policies:read',
+      'passport:read',
+      'passport:verify',
+      'audit:read',
+    ]),
+    canCreateAsset: false,
+    canVerifyEvidence: false,
+    canValidateValuation: false,
+    canApproveTokenization: true,
+    canMintToken: false,
+    canExecuteTransfer: false,
+    canManagePolicies: true, // Key stakeholder in 2-of-3 quorum
     canReadAudit: true,
   },
   [ROLES.AUDITOR]: {
@@ -245,6 +273,13 @@ const DEV_PERSONAS = Object.freeze({
     organization: MSPS.COMPLIANCE_MSP,
     role: ROLES.COMPLIANCE_OFFICER,
     permissions: ROLE_PERMISSIONS_MATRIX[ROLES.COMPLIANCE_OFFICER].permissions,
+  },
+  'governance-approver': {
+    userId: 'governance-approver',
+    name: 'Elena Governance',
+    organization: MSPS.GOVERNANCE_MSP,
+    role: ROLES.GOVERNANCE,
+    permissions: ROLE_PERMISSIONS_MATRIX[ROLES.GOVERNANCE].permissions,
   },
   'auditor-bob': {
     userId: 'auditor-bob',

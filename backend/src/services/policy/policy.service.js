@@ -19,6 +19,114 @@ const { validatePolicyStructure, isPolicyEffective } = require('./policy.model')
 const logger = require('../../utils/logger');
 
 class PolicyService {
+  constructor() {
+    this._seedDefaultPolicies();
+  }
+
+  _seedDefaultPolicies() {
+    if (registry.list().length === 0) {
+      try {
+        const now = new Date().toISOString();
+        registry.register({
+          policyId: 'transfer-eligibility-global',
+          name: 'Global Transfer Eligibility',
+          version: '1.0',
+          scope: POLICY_SCOPES.GLOBAL,
+          status: POLICY_STATUS.ACTIVE,
+          description: 'Global Transfer Eligibility: ensures asset is in active lifecycle state and not restricted.',
+          effectiveFrom: now,
+          createdBy: 'GovernanceMSP',
+          rules: [
+            {
+              ruleId: 'rule-asset-transferable',
+              category: 'ELIGIBILITY',
+              action: 'ALLOW',
+              condition: {
+                field: 'asset.restrictions.transferAllowed',
+                operator: 'IS_TRUE',
+              },
+              reasonCode: 'ASSET_RESTRICTED',
+              description: 'Asset must permit transfer rights',
+            },
+            {
+              ruleId: 'rule-asset-not-frozen',
+              category: 'ASSET_RESTRICTION',
+              action: 'ALLOW',
+              condition: {
+                field: 'asset.restrictions.restricted',
+                operator: 'IS_FALSE',
+              },
+              reasonCode: 'ASSET_RESTRICTED',
+              description: 'Asset cannot be in a restricted or frozen state',
+            },
+          ],
+        });
+
+        registry.register({
+          policyId: 'kyc-compliance-global',
+          name: 'Global KYC & Identity Whitelist',
+          version: '1.0',
+          scope: POLICY_SCOPES.GLOBAL,
+          status: POLICY_STATUS.ACTIVE,
+          description: 'Global Participant KYC & Identity Verification.',
+          effectiveFrom: now,
+          createdBy: 'GovernanceMSP',
+          rules: [
+            {
+              ruleId: 'rule-sender-kyc',
+              category: 'COMPLIANCE',
+              action: 'ALLOW',
+              condition: {
+                field: 'sender.kycStatus',
+                operator: 'EQUALS',
+                value: 'VERIFIED',
+              },
+              reasonCode: 'KYC_REQUIRED',
+              description: 'Sender KYC verification required',
+            },
+            {
+              ruleId: 'rule-receiver-kyc',
+              category: 'COMPLIANCE',
+              action: 'ALLOW',
+              condition: {
+                field: 'receiver.kycStatus',
+                operator: 'EQUALS',
+                value: 'VERIFIED',
+              },
+              reasonCode: 'KYC_REQUIRED',
+              description: 'Receiver KYC verification required',
+            },
+          ],
+        });
+
+        registry.register({
+          policyId: 'double-pledge-protection-global',
+          name: 'Double-Pledge Collateral Guard',
+          version: '1.0',
+          scope: POLICY_SCOPES.GLOBAL,
+          status: POLICY_STATUS.ACTIVE,
+          description: 'Double-Pledge and Collateral Protection: Prevents transfer of pledged assets.',
+          effectiveFrom: now,
+          createdBy: 'GovernanceMSP',
+          rules: [
+            {
+              ruleId: 'rule-unpledged-transfer',
+              category: 'ASSET_RESTRICTION',
+              action: 'ALLOW',
+              condition: {
+                field: 'asset.restrictions.pledged',
+                operator: 'IS_FALSE',
+              },
+              reasonCode: 'ASSET_PLEDGED',
+              description: 'Pledged assets cannot be transferred without release',
+            },
+          ],
+        });
+      } catch (err) {
+        logger.warn('Failed to seed default transfer policies', { error: err.message });
+      }
+    }
+  }
   /**
    * Registers a new transfer policy version.
    *
