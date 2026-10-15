@@ -291,4 +291,16 @@ function _rotateTokens(refreshToken, options = {}) {
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 }
 
+module.exports = {
+  sign,
+  verify,
+  signRefreshToken,
+  verifyRefreshToken,
+  rotateTokens: _rotateTokens,
+  getSecret,
+  DEFAULT_DEV_SECRET,
+  DEFAULT_ISSUER,
+  DEFAULT_AUDIENCE,
+};
+
 
