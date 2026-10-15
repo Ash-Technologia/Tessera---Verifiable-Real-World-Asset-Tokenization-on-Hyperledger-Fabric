@@ -39,17 +39,22 @@ export function Table({
               </td>
             </tr>
           ) : (
-            rows.map((row, rowIndex) => (
-              <tr key={row[rowKey] || rowIndex} role="row">
-                {columns.map((column) => (
-                  <td key={column.key} style={{ textAlign: column.align }}>
-                    {column.render
-                      ? column.render(row[column.key], row, rowIndex)
-                      : row[column.key]}
-                  </td>
-                ))}
-              </tr>
-            ))
+            rows.map((row, rowIndex) => {
+              const key = typeof rowKey === 'function'
+                ? rowKey(row, rowIndex)
+                : (row?.[rowKey] ?? rowIndex);
+              return (
+                <tr key={key} role="row">
+                  {columns.map((column) => (
+                    <td key={column.key || `col-${column.header}`} style={{ textAlign: column.align, width: column.width }}>
+                      {column.render
+                        ? column.render(row || {}, rowIndex, row?.[column.key])
+                        : (row?.[column.key] ?? '—')}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
