@@ -1,266 +1,484 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Card, Button, Badge, Table, Input, Select, LoadingState, ErrorState, EmptyState, SectionHeader } from '../components/ui/index.js';
-import { policiesApi } from '../services/api/index.js';
-import { Icon } from '../components/ui/Icons.jsx';
-import { formatTimestamp } from '../lib/format.js';
+import React, { useState, useEffect } from 'react';
+import { Card, Button, StatusBadge, Badge, LoadingState, ErrorState, Modal } from '../components/ui/index.js';
+import { IconShield, IconMore, IconPlus } from '../components/ui/Icons.jsx';
+import { policiesApi, assetsApi } from '../services/api/index.js';
+import { useIdentity } from '../context/IdentityContext.jsx';
 
-const REASON_CODE_LABELS = {
-  INSUFFICIENT_BALANCE: 'Sender available balance is lower than the requested transfer quantity.',
-  RECIPIENT_NOT_ELIGIBLE: 'Recipient identity is not eligible or not authorized on this channel.',
-  SENDER_NOT_ELIGIBLE: 'Sender identity does not hold valid transfer rights for this token.',
-  ASSET_RESTRICTED: 'Underlying asset lifecycle state restricts token operations.',
-  ASSET_PLEDGED: 'Asset is currently pledged or encumbered as collateral.',
-  TOKEN_LOCKED: 'Token is administratively locked from secondary transfers.',
-  TOKEN_RETIRED: 'Token has been retired or redeemed; no transfers permitted.',
-  TRANSFER_LIMIT_EXCEEDED: 'Transfer quantity exceeds the maximum allowable transfer limit.',
-  WHOLE_TOKEN_REQUIRED: 'Asset is configured as a WHOLE token; transfers must be integer quantities.',
-  FRACTIONAL_TRANSFER_NOT_ALLOWED: 'Fractional token transfers are prohibited for this token structure.',
-  POLICY_NOT_FOUND: 'No active transfer policy was found for this token and asset scope.',
-  POLICY_INACTIVE: 'Matching transfer policy is currently marked inactive.',
-  POLICY_NOT_EFFECTIVE: 'Matching transfer policy effective date is in the future.',
-  INVALID_PRECISION: 'Decimal places in transfer quantity exceed the supported token precision.',
-  SELF_TRANSFER_PROHIBITED: 'Sender and recipient cannot be the same identity and MSP.',
-  ROLE_UNAUTHORIZED: 'Current caller role is not authorized to submit token transfers.',
-  KYC_REQUIRED: 'Recipient or sender identity lacks required verified KYC compliance attestation.',
-  EVALUATION_ERROR: 'Policy evaluator encountered an unhandled condition during evaluation.',
-  FIELD_UNRESOLVABLE: 'A required policy field could not be resolved from current state.',
-  CONFLICTING_POLICIES: 'Multiple conflicting policy rules returned contradictory decisions.',
-  TOKEN_OPERATION_BLOCKED_BY_ASSET_STATE: 'Token operation is blocked by the underlying asset lifecycle status.',
-};
+const MSP_OPTIONS = ['InvestorMSP', 'IssuerMSP', 'VerifierMSP', 'GovernanceMSP'];
 
 export function PolicyRules() {
-  const [policies, setPolicies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const { identity } = useIdentity();
 
-  const loadPolicies = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await policiesApi.list({ enabled: true });
-      setPolicies(res.policies || []);
-    } catch (err) {
-      setError(err.message || 'Failed to load policies');
-    } finally {
-      setLoading(false);
+  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'versions' | 'simulation'
+  const [policiesList, setPoliciesList] = useState([]);
+  const [loadingPolicies, setLoadingPolicies] = useState(false);
+  const [availableAssets, setAvailableAssets] = useState([]);
+
+  // Governance Modal State
+  const [showQuorumModal, setShowQuorumModal] = useState(false);
+
+  // Simulation Form State
+  const [simAssetId, setSimAssetId] = useState('');
+  const [simAction, setSimAction] = useState('TRANSFER');
+  const [simSenderId, setSimSenderId] = useState('');
+  const [simSenderMSP, setSimSenderMSP] = useState('InvestorMSP');
+  const [simReceiverId, setSimReceiverId] = useState('');
+  const [simReceiverMSP, setSimReceiverMSP] = useState('InvestorMSP');
+  const [simAmount, setSimAmount] = useState('1');
+
+  // Simulation Result State
+  const [simulating, setSimulating] = useState(false);
+  const [simResult, setSimResult] = useState(null);
+  const [simError, setSimError] = useState(null);
+
+  // Fetch real policy catalog
+  useEffect(() => {
+    let active = true;
+    async function loadPolicies() {
+      setLoadingPolicies(true);
+      try {
+        const res = await policiesApi.list();
+        if (active && res?.policies) {
+          setPoliciesList(res.policies);
+        }
+      } catch {
+        // Fall back gracefully
+      } finally {
+        if (active) setLoadingPolicies(false);
+      }
     }
+    loadPolicies();
+    return () => { active = false; };
   }, []);
 
+  // Fetch available on-chain assets for simulation picker
   useEffect(() => {
-    loadPolicies();
-  }, [loadPolicies]);
+    let active = true;
+    assetsApi.listAssets({ pageSize: 50 }).then((res) => {
+      if (active && res?.assets?.length) {
+        setAvailableAssets(res.assets);
+        if (res.assets[0]?.assetId) {
+          setSimAssetId(res.assets[0].assetId);
+        }
+      }
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    // TODO: Implement policy creation modal
-    alert('Policy creation modal would open here');
-  };
+  // Initialize simulation sender with session identity
+  useEffect(() => {
+    if (identity?.identityId && !simSenderId) {
+      setSimSenderId(identity.identityId);
+    }
+    if (identity?.mspId) {
+      setSimSenderMSP(identity.mspId);
+    }
+  }, [identity]);
 
-  const handleEvaluate = async (e) => {
-    e.preventDefault();
-    // TODO: Implement policy evaluation modal
-    alert('Policy evaluation modal would open here');
-  };
+  const handleSimulate = async (e) => {
+    e?.preventDefault();
+    setSimulating(true);
+    setSimError(null);
+    setSimResult(null);
 
-  const handleRetry = (policyId) => {
-    // TODO: Implement retry for failed policy
+    const payload = {
+      transfer: {
+        tokenId: simAssetId.trim(),
+        fromOwnerId: simSenderId.trim(),
+        fromOwnerMSP: simSenderMSP,
+        toOwnerId: simReceiverId.trim(),
+        toOwnerMSP: simReceiverMSP,
+        amount: Number(simAmount),
+        action: simAction,
+      },
+      context: {
+        sender: {
+          ownerId: simSenderId.trim(),
+          mspId: simSenderMSP,
+          kycStatus: 'VERIFIED',
+        },
+        receiver: {
+          ownerId: simReceiverId.trim(),
+          mspId: simReceiverMSP,
+          kycStatus: 'VERIFIED',
+        },
+      },
+      options: {
+        dryRun: true,
+      },
+    };
+
+    try {
+      const res = await policiesApi.evaluate(payload);
+      setSimResult(res?.decision || res);
+    } catch (err) {
+      setSimError(err?.message || 'Policy simulation evaluation failed');
+    } finally {
+      setSimulating(false);
+    }
   };
 
   return (
-    <div className="ts-container" style={{ padding: '1.5rem 1.5rem 3rem' }}>
-      <div style={{ marginTop: '0.8rem', marginBottom: '1.5rem' }}>
-        <SectionHeader
-          title="Policy Rules Engine"
-          subtitle="Manage and evaluate transfer policies with dry-run simulation and canonical reason codes."
-          actions={
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={loadPolicies}
-                disabled={refreshing}
-              >
-                {refreshing ? 'Refreshing...' : '↻ Refresh Policies'}
-              </Button>
-              <Button variant="primary" onClick={handleCreate}>
-                + Create Policy
-              </Button>
-              <Button variant="secondary" onClick={handleEvaluate}>
-                Dry-Run Evaluation
-              </Button>
-            </div>
-          }
-        />
-
-        {error && (
-          <div style={{ padding: '1rem', background: 'var(--ts-danger-bg)', color: 'var(--ts-danger)', borderRadius: 'var(--ts-radius-md)', border: '1px solid var(--ts-danger)', marginBottom: '1.5rem' }}>
-            <strong>Error loading policies:</strong> {error}
-            <Button size="sm" variant="secondary" onClick={loadPolicies} style={{ marginLeft: '1rem' }}>
-              Retry
-            </Button>
-          </div>
-        )}
-
-        <div className="ts-grid-4" style={{ marginBottom: '1.5rem' }}>
-          <MetricCard label="Total Policies" value={policies.length} sub="Active rules in registry" />
-          <MetricCard label="Global Scope" value={policies.filter(p => p.scope === 'GLOBAL').length} sub="Organization-wide rules" />
-          <MetricCard label="Asset-Specific" value={policies.filter(p => p.scope === 'ASSET').length} sub="Per-asset overrides" />
-          <MetricCard label="Token-Scoped" value={policies.filter(p => p.scope === 'TOKEN').length} sub="Per-token restrictions" />
+    <div className="ts-page-container">
+      {/* Page Header */}
+      <div className="ts-page-header-row">
+        <div>
+          <h1 className="ts-screen-title">Policy Rules</h1>
+          <p className="ts-screen-subtitle">Inspect active compliance policies, version history, and simulate transfer impact.</p>
         </div>
-
-        <Card title="Policy Registry">
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <input
-              type="text"
-              placeholder="Search policies..."
-              className="ts-input"
-              style={{ width: 'auto', minWidth: '200px', maxWidth: '300px' }}
-            />
-            <Select
-              placeholder="All Scopes"
-              options={[
-                { value: '', label: 'All Scopes' },
-                { value: 'GLOBAL', label: 'Global' },
-                { value: 'ASSET', label: 'Asset-Specific' },
-                { value: 'TOKEN', label: 'Token-Specific' },
-                { value: 'ASSET_TYPE', label: 'Asset Type' },
-              ]}
-              style={{ width: 'auto', minWidth: '160px' }}
-            />
-            <Select
-              placeholder="All Statuses"
-              options={[
-                { value: '', label: 'All Statuses' },
-                { value: 'ACTIVE', label: 'Active' },
-                { value: 'INACTIVE', label: 'Inactive' },
-                { value: 'DRAFT', label: 'Draft' },
-                { value: 'DEPRECATED', label: 'Deprecated' },
-              ]}
-              style={{ width: 'auto', minWidth: '140px' }}
-            />
-          </div>
-
-          <Table
-            columns={[
-              {
-                key: 'policyId',
-                header: 'Policy ID',
-                render: (row) => <span className="ts-mono" style={{ fontWeight: 600 }}>{row.policyId}</span>,
-              },
-              {
-                key: 'name',
-                header: 'Name',
-                render: (row) => <strong>{row.name}</strong>,
-              },
-              {
-                key: 'scope',
-                header: 'Scope',
-                render: (row) => <span className={`ts-badge ts-badge-${row.scope === 'GLOBAL' ? 'blue' : row.scope === 'ASSET' ? 'green' : row.scope === 'TOKEN' ? 'purple' : 'amber'}`}>{row.scope}</span>,
-              },
-              {
-                key: 'status',
-                header: 'Status',
-                render: (row) => (
-                  <span className={`ts-badge ts-badge-${row.status === 'ACTIVE' ? 'success' : row.status === 'DRAFT' ? 'neutral' : 'danger'}`}>
-                    {row.status}
-                  </span>
-                ),
-              },
-              {
-                key: 'version',
-                header: 'Version',
-                render: (row) => <span className="ts-mono">{row.version}</span>,
-              },
-              {
-                key: 'updatedAt',
-                header: 'Last Updated',
-                render: (row) => <span className="ts-metadata">{formatTimestamp(row.updatedAt)}</span>,
-              },
-              {
-                key: 'actions',
-                header: 'Actions',
-                render: (row) => (
-                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                    <Button size="sm" variant="secondary" onClick={() => { /* edit */ }}>
-                      Edit
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => { /* evaluate */ }}>
-                      Evaluate
-                    </Button>
-                    <Button size="sm" variant={row.status === 'ACTIVE' ? 'danger' : 'secondary'} onClick={() => { /* toggle */ }}>
-                      {row.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                    </Button>
-                  </div>
-                ),
-              },
-            ]}
-            rows={[]}
-            rowKey="policyId"
-            emptyMessage="No policies defined yet. Create your first policy to get started."
-          />
-        </Card>
-
-        {/* Dry-Run Evaluation Panel */}
-        <Card title="Dry-Run Policy Evaluation" style={{ marginTop: '1.5rem' }}>
-          <p className="ts-body" style={{ margin: '0 0 1rem', fontSize: 'var(--ts-text-sm)' }}>
-            Simulate a transfer against current policies without committing to the ledger.
-          </p>
-          <form onSubmit={(e) => { e.preventDefault(); alert('Dry-run evaluation would run here'); }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-              <div>
-                <label className="ts-label" htmlFor="eval-tokenId">Token ID *</label>
-                <input id="eval-tokenId" className="ts-input" placeholder="TOK-VEH-2025-001" required />
-              </div>
-              <div>
-                <label className="ts-label" htmlFor="eval-assetId">Asset ID *</label>
-                <input id="eval-assetId" className="ts-input" placeholder="VEH-2025-001" required />
-              </div>
-              <div>
-                <label className="ts-label" htmlFor="eval-fromOwnerId">Sender (fromOwnerId) *</label>
-                <input id="eval-fromOwnerId" className="ts-input" placeholder="user-issuer-01" required />
-              </div>
-              <div>
-                <label className="ts-label" htmlFor="eval-fromOwnerMSP">Sender MSP *</label>
-                <Select id="eval-fromOwnerMSP" value="IssuerMSP" options={[
-                  { value: 'IssuerMSP', label: 'IssuerMSP' },
-                  { value: 'VerifierMSP', label: 'VerifierMSP' },
-                  { value: 'ComplianceMSP', label: 'ComplianceMSP' },
-                ]} required />
-              </div>
-              <div>
-                <label className="ts-label" htmlFor="eval-toOwnerId">Recipient (toOwnerId) *</label>
-                <input id="eval-toOwnerId" className="ts-input" placeholder="investor-verifier-01" required />
-              </div>
-              <div>
-                <label className="ts-label" htmlFor="eval-toOwnerMSP">Recipient MSP *</label>
-                <Select id="eval-toOwnerMSP" value="VerifierMSP" options={[
-                  { value: 'VerifierMSP', label: 'VerifierMSP' },
-                  { value: 'IssuerMSP', label: 'IssuerMSP' },
-                  { value: 'ComplianceMSP', label: 'ComplianceMSP' },
-                ]} required />
-              </div>
-              <div>
-                <label className="ts-label" htmlFor="eval-amount">Amount *</label>
-                <input id="eval-amount" type="number" className="ts-input" placeholder="100.00" required step="0.01" min="0.01" />
-              </div>
-              <div>
-                <label className="ts-label" htmlFor="eval-reason">Reason</label>
-                <input id="eval-reason" className="ts-input" placeholder="Secondary market trade settlement" />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem' }}>
-              <Button type="submit" variant="primary" style={{ minWidth: '180px' }}>
-                Run Dry-Run Evaluation
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => { /* reset form */ }}>
-                Reset Form
-              </Button>
-            </div>
-          </form>
-        </Card>
+        <Button variant="primary" onClick={() => setShowQuorumModal(true)}>
+          <IconPlus size={16} />
+          <span>New Rule</span>
+        </Button>
       </div>
+
+      {/* Tabs */}
+      <div className="ts-tabs-bar">
+        <button
+          className={`ts-tab-btn ${activeTab === 'active' ? 'active' : ''}`}
+          onClick={() => setActiveTab('active')}
+        >
+          Active Rules ({policiesList.length})
+        </button>
+        <button
+          className={`ts-tab-btn ${activeTab === 'versions' ? 'active' : ''}`}
+          onClick={() => setActiveTab('versions')}
+        >
+          Rule Versions & Governance
+        </button>
+        <button
+          className={`ts-tab-btn ${activeTab === 'simulation' ? 'active' : ''}`}
+          onClick={() => setActiveTab('simulation')}
+        >
+          Simulation
+        </button>
+      </div>
+
+      {/* TAB 1: ACTIVE RULES */}
+      {activeTab === 'active' && (
+        <div className="ts-rules-list">
+          {loadingPolicies && <LoadingState message="Loading registered policy rules..." />}
+
+          {!loadingPolicies && policiesList.length === 0 && (
+            <Card>
+              <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--ts-neutral-500)' }}>
+                No active policy rules discovered in ledger registry.
+              </div>
+            </Card>
+          )}
+
+          {policiesList.map((policy) => (
+            <div key={`${policy.policyId}-${policy.version}`} className="ts-rule-card" style={{ marginBottom: '1rem' }}>
+              <div className="ts-rule-left">
+                <div
+                  className="ts-rule-icon-box"
+                  style={{ backgroundColor: 'var(--ts-soft-blue, #eff6ff)', color: 'var(--ts-primary, #2563eb)' }}
+                >
+                  <IconShield size={20} />
+                </div>
+                <div className="ts-rule-details">
+                  <div className="ts-rule-title-row" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span className="ts-rule-name" style={{ fontWeight: 600 }}>{policy.policyId}</span>
+                    <Badge tone="blue">v{policy.version}</Badge>
+                    <Badge tone="neutral">Scope: {policy.scope}</Badge>
+                  </div>
+                  <div className="ts-rule-desc" style={{ marginTop: '0.25rem', color: 'var(--ts-neutral-600)' }}>
+                    {policy.description || 'System compliance and transfer enforcement rule.'}
+                  </div>
+
+                  {/* Rules Breakdown */}
+                  {Array.isArray(policy.rules) && policy.rules.length > 0 && (
+                    <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {policy.rules.map((r) => (
+                        <div
+                          key={r.ruleId}
+                          style={{
+                            fontSize: '0.8rem',
+                            padding: '0.4rem 0.6rem',
+                            background: 'var(--ts-surface-subtle, #f8fafc)',
+                            borderRadius: '4px',
+                            border: '1px solid var(--ts-border, #e2e8f0)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: '0.4rem',
+                          }}
+                        >
+                          <div>
+                            <strong>{r.ruleId}</strong>: {r.description || `${r.condition?.field} ${r.condition?.operator} ${r.condition?.value ?? ''}`}
+                          </div>
+                          <div>
+                            <span className="ts-mono" style={{ color: '#dc2626', fontSize: '0.75rem' }}>
+                              Reason: {r.reasonCode}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="ts-rule-right">
+                <StatusBadge status={policy.status || 'ACTIVE'} />
+                <div className="ts-rule-updated">
+                  <span className="ts-metadata">Effective:</span>
+                  <span className="ts-updated-date">{policy.effectiveFrom ? new Date(policy.effectiveFrom).toLocaleDateString() : 'Genesis'}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* TAB 2: RULE VERSIONS & GOVERNANCE */}
+      {activeTab === 'versions' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <Card title="Published Policy Versions & Governance Architecture">
+            <p className="ts-body" style={{ marginBottom: '1rem', color: 'var(--ts-text-muted)' }}>
+              Audit trail and governance consensus model for policy definitions on Hyperledger Fabric consensus channel <code>tessera-channel</code>.
+            </p>
+            <div className="ts-passport-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+              <div style={{ padding: '0.75rem', background: 'var(--ts-surface-subtle, #f8fafc)', borderRadius: '6px' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--ts-neutral-500)', fontWeight: 600 }}>Governance Consensus Model</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '0.25rem' }}>Multi-MSP Quorum (2-of-3)</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--ts-neutral-600)', marginTop: '0.2rem' }}>
+                  Requires endorsements from GovernanceMSP and IssuerMSP to enact or mutate rules.
+                </div>
+              </div>
+
+              <div style={{ padding: '0.75rem', background: 'var(--ts-surface-subtle, #f8fafc)', borderRadius: '6px' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--ts-neutral-500)', fontWeight: 600 }}>Active Version Count</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '0.25rem' }}>{policiesList.length} Registered Policies</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--ts-neutral-600)', marginTop: '0.2rem' }}>
+                  Immutable version storage with monotonic semantic incrementing.
+                </div>
+              </div>
+
+              <div style={{ padding: '0.75rem', background: 'var(--ts-surface-subtle, #f8fafc)', borderRadius: '6px' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--ts-neutral-500)', fontWeight: 600 }}>Enforcement Layer</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, marginTop: '0.25rem' }}>Server-Side & Fabric Chaincode</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--ts-neutral-600)', marginTop: '0.2rem' }}>
+                  Policy decisions enforced cryptographically at transaction proposal and commit time.
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card title="Policy Version Registry (Read-Only)">
+            <div style={{ overflowX: 'auto' }}>
+              <table className="ts-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--ts-border, #e2e8f0)', textAlign: 'left', fontSize: '0.85rem' }}>
+                    <th style={{ padding: '0.6rem' }}>Policy ID</th>
+                    <th style={{ padding: '0.6rem' }}>Version</th>
+                    <th style={{ padding: '0.6rem' }}>Scope</th>
+                    <th style={{ padding: '0.6rem' }}>Rules Count</th>
+                    <th style={{ padding: '0.6rem' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {policiesList.map((p) => (
+                    <tr key={`${p.policyId}-${p.version}`} style={{ borderBottom: '1px solid var(--ts-border, #f1f5f9)', fontSize: '0.85rem' }}>
+                      <td style={{ padding: '0.6rem', fontFamily: 'monospace', fontWeight: 600 }}>{p.policyId}</td>
+                      <td style={{ padding: '0.6rem' }}>v{p.version}</td>
+                      <td style={{ padding: '0.6rem' }}><Badge tone="neutral">{p.scope}</Badge></td>
+                      <td style={{ padding: '0.6rem' }}>{p.rules?.length || 0} rule(s)</td>
+                      <td style={{ padding: '0.6rem' }}><StatusBadge status={p.status || 'ACTIVE'} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* TAB 3: SIMULATION */}
+      {activeTab === 'simulation' && (
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <Card title="Policy Impact Simulation (Non-Mutating Dry Run)">
+            <p className="ts-body" style={{ margin: '0 0 1.25rem', color: 'var(--ts-text-muted)' }}>
+              Simulate proposed transactions against active ledger policies without committing world-state changes to Hyperledger Fabric.
+            </p>
+            <form onSubmit={handleSimulate} className="ts-form-grid">
+              <div className="ts-form-group">
+                <label className="ts-label" htmlFor="sim-asset-id">Asset / Token ID</label>
+                {availableAssets.length > 0 ? (
+                  <select
+                    id="sim-asset-id"
+                    className="ts-select"
+                    value={simAssetId}
+                    onChange={(e) => setSimAssetId(e.target.value)}
+                  >
+                    {availableAssets.map((a) => (
+                      <option key={a.assetId} value={a.assetId}>
+                        {a.assetId} — {a.assetType} ({a.status})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id="sim-asset-id"
+                    className="ts-input"
+                    value={simAssetId}
+                    onChange={(e) => setSimAssetId(e.target.value)}
+                    placeholder="Enter on-chain asset or token ID"
+                    required
+                  />
+                )}
+              </div>
+
+              <div className="ts-form-group">
+                <label className="ts-label" htmlFor="sim-action">Evaluation Action</label>
+                <select
+                  id="sim-action"
+                  className="ts-select"
+                  value={simAction}
+                  onChange={(e) => setSimAction(e.target.value)}
+                >
+                  <option value="TRANSFER">TRANSFER</option>
+                  <option value="PLEDGE">PLEDGE</option>
+                  <option value="TOKENIZE">TOKENIZE</option>
+                  <option value="RETIRE">RETIRE</option>
+                </select>
+              </div>
+
+              <div className="ts-form-group">
+                <label className="ts-label" htmlFor="sim-sender">Sender Owner ID</label>
+                <input
+                  id="sim-sender"
+                  className="ts-input ts-mono"
+                  value={simSenderId}
+                  onChange={(e) => setSimSenderId(e.target.value)}
+                  placeholder="e.g. investor-01"
+                  required
+                />
+              </div>
+
+              <div className="ts-form-group">
+                <label className="ts-label" htmlFor="sim-sender-msp">Sender MSP</label>
+                <select
+                  id="sim-sender-msp"
+                  className="ts-select"
+                  value={simSenderMSP}
+                  onChange={(e) => setSimSenderMSP(e.target.value)}
+                >
+                  {MSP_OPTIONS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ts-form-group">
+                <label className="ts-label" htmlFor="sim-receiver">Recipient Owner ID</label>
+                <input
+                  id="sim-receiver"
+                  className="ts-input ts-mono"
+                  value={simReceiverId}
+                  onChange={(e) => setSimReceiverId(e.target.value)}
+                  placeholder="e.g. investor-02"
+                  required
+                />
+              </div>
+
+              <div className="ts-form-group">
+                <label className="ts-label" htmlFor="sim-receiver-msp">Recipient MSP</label>
+                <select
+                  id="sim-receiver-msp"
+                  className="ts-select"
+                  value={simReceiverMSP}
+                  onChange={(e) => setSimReceiverMSP(e.target.value)}
+                >
+                  {MSP_OPTIONS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ts-form-group full-width">
+                <label className="ts-label" htmlFor="sim-amount">Transfer Units / Amount</label>
+                <input
+                  id="sim-amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  className="ts-input"
+                  value={simAmount}
+                  onChange={(e) => setSimAmount(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="ts-form-group full-width" style={{ marginTop: '0.5rem' }}>
+                <Button id="btn-run-simulation" variant="primary" type="submit" disabled={simulating || !simSenderId.trim() || !simReceiverId.trim()}>
+                  {simulating ? 'Simulating Evaluation...' : 'Simulate Policy Evaluation (Dry Run)'}
+                </Button>
+              </div>
+            </form>
+
+            {/* Simulation Results */}
+            {simResult && (
+              <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--ts-border)', paddingTop: '1rem' }}>
+                <h3 style={{ fontSize: '1rem', color: 'var(--ts-navy-primary, #1e3a8a)', marginBottom: '0.75rem' }}>
+                  Simulation Outcome
+                </h3>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <StatusBadge status={simResult.decision === 'ALLOW' || simResult.allowed ? 'ACTIVE' : 'RESTRICTED'} />
+                  <span style={{ fontWeight: 600 }}>
+                    {simResult.decision === 'ALLOW' || simResult.allowed ? 'Transaction Permitted (ALLOW)' : 'Transaction Blocked (DENY)'}
+                  </span>
+                </div>
+                <div className="ts-metadata" style={{ fontSize: '0.85rem', color: 'var(--ts-neutral-600)' }}>
+                  Non-mutating evaluation completed. No transactions committed to Hyperledger Fabric.
+                  {simResult.deniedRules?.length > 0 && (
+                    <div style={{ marginTop: '0.25rem', color: '#dc2626' }}>
+                      Violations detected: {simResult.deniedRules.join(', ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {simError && (
+              <div style={{ marginTop: '1rem' }}>
+                <ErrorState title="Simulation Failed" error={{ message: simError }} />
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Quorum Governance Requirement Modal */}
+      {showQuorumModal && (
+        <Modal
+          isOpen={showQuorumModal}
+          onClose={() => setShowQuorumModal(false)}
+          title="Policy Rule Creation Quorum Required"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem 0' }}>
+            <p className="ts-body" style={{ margin: 0 }}>
+              Under TESSERA Governance Architecture, creating, updating, or retiring compliance rules requires a multi-organization consensus quorum.
+            </p>
+            <div style={{ padding: '0.8rem', background: 'var(--ts-surface-subtle, #f8fafc)', borderRadius: '6px', border: '1px solid var(--ts-border, #e2e8f0)', fontSize: '0.85rem' }}>
+              <div style={{ fontWeight: 600, marginBottom: '0.3rem' }}>Endorsement Policy Requirement:</div>
+              <ul style={{ margin: 0, paddingLeft: '1.2rem', lineHeight: 1.6 }}>
+                <li>Minimum <strong>2-of-3 MSP endorsement quorum</strong> required.</li>
+                <li>Participating MSPs: <code>GovernanceMSP</code>, <code>IssuerMSP</code>, <code>VerifierMSP</code>.</li>
+                <li>Your current role/session MSP: <strong>{identity?.mspId || 'Unauthenticated'}</strong>.</li>
+              </ul>
+            </div>
+            <p className="ts-metadata" style={{ margin: 0 }}>
+              Direct unilateral creation of compliance rules from the administrative web console is disabled to protect consortium policy integrity. Please submit an on-chain governance proposal via the CLI tooling.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <Button variant="secondary" onClick={() => setShowQuorumModal(false)}>
+                Acknowledge & Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
