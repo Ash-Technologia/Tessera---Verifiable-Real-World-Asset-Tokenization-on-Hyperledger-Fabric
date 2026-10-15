@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" fill="none">
+  <!-- 3D Geometric Tessellated Cube Mark -->
+  <g transform="translate(6, 6)">
+    <!-- Isometric Cube Outer Paths -->
+    <!-- Top Face -->
+    <polygon points="24,3 45,15 24,27 3,15" fill="#2684E8" />
+    <polygon points="24,3 34.5,9 24,15 13.5,9" fill="#4AA2F8" opacity="0.9" />
+    <!-- Left Face -->
+    <polygon points="3,15 24,27 24,47 3,35" fill="#142B4A" />
+    <polygon points="3,15 13.5,21 13.5,41 3,35" fill="#1E3E6B" />
+    <!-- Right Face -->
+    <polygon points="24,27 45,15 45,35 24,47" fill="#0D1B32" />
+    <polygon points="24,27 34.5,21 34.5,41 24,47" fill="#172C4C" />
+    <!-- Inner Accent Cube Facet (Golden / Cyan tokenization node) -->
+    <polygon points="24,15 30,18.5 24,22 18,18.5" fill="#E8A23A" />
+    <polygon points="18,18.5 24,22 24,29 18,25.5" fill="#C98124" />
+    <polygon points="24,22 30,18.5 30,25.5 24,29" fill="#9C6215" />
+  </g>
+
+  <!-- Typography -->
+  <text x="64" y="32" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800" letter-spacing="1.5" fill="#142B4A">TESSERA</text>
+  <text x="65" y="44" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="6.8" font-weight="700" letter-spacing="1.8" fill="#718096">REAL ASSETS. REAL TRUST.</text>
+</svg>
